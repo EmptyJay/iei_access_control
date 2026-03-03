@@ -185,10 +185,37 @@ git push origin main
 # On the Pi
 cd /opt/iei
 git pull
-bundle install   # only if Gemfile.lock changed
-RAILS_ENV=production bin/rails db:migrate   # only if there are new migrations
+bundle install                                       # only if Gemfile.lock changed
+RAILS_ENV=production bin/rails db:migrate           # only if there are new migrations
+RAILS_ENV=production bin/rails assets:precompile    # only if CSS/JS changed
 sudo systemctl restart iei
 ```
+
+---
+
+## Admin Authentication
+
+The web UI is protected by a single admin password stored as a bcrypt digest in `config/credentials.yml.enc`. The master key (`config/master.key`) is never committed to git — keep it safe.
+
+### Changing the password
+
+On your dev machine:
+
+```bash
+# 1. Generate a new bcrypt digest
+bin/rails runner 'puts BCrypt::Password.create("yournewpassword")'
+
+# 2. Store it in credentials
+bin/rails credentials:edit
+```
+
+Add or update:
+
+```yaml
+admin_password_digest: <paste digest here>
+```
+
+Then deploy normally (`git push` → `git pull` on Pi → `sudo systemctl restart iei`).
 
 ---
 
