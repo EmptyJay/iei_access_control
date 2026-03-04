@@ -1,0 +1,54 @@
+<% content_for :title, "Members" %>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h2 class="mb-0">Members <span class="badge bg-secondary fs-6"><%= @users.size %></span></h2>
+  <%= link_to "Add Member", new_user_path, class: "btn btn-primary" %>
+</div>
+
+<% if @users.any? %>
+  <table class="table table-hover align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th>Slot</th>
+        <th>Name</th>
+        <th>Card #</th>
+        <th>Site Code</th>
+        <th>Status</th>
+        <th>Synced</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @users.each do |user| %>
+        <tr>
+          <td class="text-muted"><%= user.slot %></td>
+          <td><strong><%= user.name %></strong></td>
+          <td><code><%= user.card_number %></code></td>
+          <td><%= user.site_code %></td>
+          <td>
+            <% if user.active? %>
+              <span class="badge bg-success">Active</span>
+            <% else %>
+              <span class="badge bg-secondary">Inactive</span>
+            <% end %>
+          </td>
+          <td>
+            <% if user.synced? %>
+              <span class="badge bg-success">Synced</span>
+            <% else %>
+              <span class="badge bg-warning text-dark">Pending</span>
+            <% end %>
+          </td>
+          <td class="text-end">
+            <%= link_to "Edit", edit_user_path(user), class: "btn btn-sm btn-outline-secondary me-1" %>
+            <%= button_to "Remove", user_path(user), method: :delete,
+                  class: "btn btn-sm btn-outline-danger",
+                  form: { data: { turbo_confirm: "Remove #{user.name}?" } } %>
+          </td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+<% else %>
+  <p class="text-muted">No members yet. <%= link_to "Add one", new_user_path %>.</p>
+<% end %>

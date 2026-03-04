@@ -1,0 +1,44 @@
+<%= form_with model: user do |f| %>
+  <% if user.errors.any? %>
+    <div class="alert alert-danger">
+      <ul class="mb-0">
+        <% user.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="mb-3">
+    <%= f.label :name, class: "form-label" %>
+    <%= f.text_field :name, class: "form-control", autofocus: true %>
+  </div>
+
+  <div class="row">
+    <div class="col-md-4 mb-3">
+      <%= f.label :slot, class: "form-label" %>
+      <%= f.number_field :slot, class: "form-control", min: 1 %>
+      <div class="form-text">Controller memory slot (auto-assigned)</div>
+    </div>
+    <div class="col-md-4 mb-3">
+      <%= f.label :site_code, class: "form-label" %>
+      <%= f.number_field :site_code, class: "form-control", min: 0 %>
+    </div>
+    <div class="col-md-4 mb-3">
+      <%= f.label :card_number, class: "form-label" %>
+      <%= f.number_field :card_number, class: "form-control", min: 1 %>
+    </div>
+  </div>
+
+  <div class="mb-4">
+    <div class="form-check form-switch">
+      <%= f.check_box :active, class: "form-check-input", role: "switch" %>
+      <%= f.label :active, "Active (can access door)", class: "form-check-label" %>
+    </div>
+  </div>
+
+  <div class="d-flex gap-2">
+    <%= f.submit class: "btn btn-primary" %>
+    <%= link_to "Cancel", users_path, class: "btn btn-outline-secondary" %>
+  </div>
+<% end %>
