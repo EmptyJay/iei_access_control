@@ -1,0 +1,51 @@
+<% content_for :title, "Settings" %>
+
+<h2 class="mb-4">Settings</h2>
+
+<div class="row g-4">
+
+  <%# Editable settings %>
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header fw-semibold">General</div>
+      <div class="card-body">
+        <%= form_with url: settings_path, method: :patch do |f| %>
+          <div class="mb-3">
+            <label class="form-label">Default Site Code</label>
+            <input type="number" name="default_site_code" value="<%= @default_site_code %>"
+                   class="form-control" min="0" autocomplete="off" data-1p-ignore>
+            <div class="form-text">Pre-filled when adding a new member.</div>
+          </div>
+          <%= f.submit "Save", class: "btn btn-primary" %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+
+  <%# Read-only system info %>
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header fw-semibold">System</div>
+      <div class="card-body">
+        <dl class="mb-0">
+          <dt class="text-muted small">Rolling Counter</dt>
+          <dd class="mb-3">
+            <span class="font-monospace fs-5"><%= @rolling_counter_hex %></span>
+            <span class="text-muted ms-2">(<%= @rolling_counter_dec %> / 255)</span>
+            <div class="progress mt-1" style="height:6px">
+              <div class="progress-bar" style="width:<%= (@rolling_counter_dec / 255.0 * 100).round %>%"></div>
+            </div>
+            <div class="form-text">Managed automatically by the sync process. Do not edit manually.</div>
+          </dd>
+
+          <dt class="text-muted small">Total Members</dt>
+          <dd class="mb-3"><%= User.count %></dd>
+
+          <dt class="text-muted small">Pending Sync</dt>
+          <dd class="mb-0"><%= User.pending_sync.count %></dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+
+</div>

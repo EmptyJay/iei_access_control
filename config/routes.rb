@@ -11,6 +11,7 @@ Rails.application.routes.draw do
   post "users/bulk_update", to: "users#bulk_update",  as: :bulk_update_users
   resources :users
   resources :access_events, only: [ :index ]
+  resource  :settings, only: [ :edit, :update ]
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   get "up" => "rails/health#show", as: :rails_health_check

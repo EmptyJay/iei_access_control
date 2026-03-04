@@ -14,7 +14,7 @@ class UsersController < ApplicationController
   end
 
   def new
-    @user = User.new(slot: User.next_available_slot, site_code: 105)
+    @user = User.new(slot: User.next_available_slot, site_code: Setting["default_site_code"] || 105)
   end
 
   def create

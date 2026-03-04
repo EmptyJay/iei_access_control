@@ -8,7 +8,8 @@
 
 # ── Settings ──────────────────────────────────────────────────────────────────
 
-Setting.find_or_create_by!(key: "rolling_counter") { |s| s.value = "D0" }
+Setting.find_or_create_by!(key: "rolling_counter")   { |s| s.value = "D0"  }
+Setting.find_or_create_by!(key: "default_site_code") { |s| s.value = "105" }
 puts "Setting: rolling_counter = #{Setting['rolling_counter']}"
 
 # ── Hub Manager Export Parser ─────────────────────────────────────────────────
