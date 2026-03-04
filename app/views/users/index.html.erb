@@ -44,13 +44,19 @@
             <% end %>
           </td>
           <td class="text-end">
-            <%= button_to user_path(user), method: :delete,
-                  class: "btn btn-sm btn-outline-danger",
-                  form: { onsubmit: "return confirm('Remove #{user.full_name}?')",
-                          onclick: "event.stopPropagation()" },
-                  title: "Remove #{user.full_name}" do %>
-              <i class="bi bi-trash"></i>
-            <% end %>
+            <div class="d-flex justify-content-end gap-1" onclick="event.stopPropagation()">
+              <%= link_to edit_user_path(user),
+                    class: "btn btn-sm btn-outline-secondary",
+                    title: "Edit #{user.full_name}" do %>
+                <i class="bi bi-pencil"></i>
+              <% end %>
+              <%= button_to user_path(user), method: :delete,
+                    class: "btn btn-sm btn-outline-danger",
+                    form: { onsubmit: "return confirm('Remove #{user.full_name}?')" },
+                    title: "Remove #{user.full_name}" do %>
+                <i class="bi bi-trash"></i>
+              <% end %>
+            </div>
           </td>
         </tr>
       <% end %>
