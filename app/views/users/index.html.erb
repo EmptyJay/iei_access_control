@@ -1,7 +1,7 @@
 <% content_for :title, "Members" %>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h2 class="mb-0">Members <span class="badge bg-secondary fs-6"><%= @users.size %></span></h2>
+  <h2 class="mb-0">Members <span class="badge bg-secondary fs-6" id="visible-count"><%= @users.size %></span></h2>
   <div class="d-flex gap-2">
     <%= link_to "Export CSV", export_users_path, class: "btn btn-outline-secondary" %>
     <%= link_to "Import CSV", import_users_path, class: "btn btn-outline-primary" %>
@@ -10,6 +10,41 @@
 </div>
 
 <% if @users.any? %>
+  <%# Filter bar %>
+  <div class="row g-2 align-items-center mb-3">
+    <div class="col-sm-4">
+      <input type="search" id="name-search" class="form-control" placeholder="Search by name…"
+             oninput="filterTable()" autocomplete="off" data-1p-ignore>
+    </div>
+    <div class="col-auto">
+      <div class="btn-group" role="group" aria-label="Status filter">
+        <input type="radio" class="btn-check" name="status-filter" id="status-all"     value=""         checked onchange="filterTable()">
+        <label class="btn btn-outline-secondary btn-sm" for="status-all">All</label>
+
+        <input type="radio" class="btn-check" name="status-filter" id="status-active"   value="true"    onchange="filterTable()">
+        <label class="btn btn-outline-success btn-sm"    for="status-active">Active</label>
+
+        <input type="radio" class="btn-check" name="status-filter" id="status-inactive" value="false"   onchange="filterTable()">
+        <label class="btn btn-outline-secondary btn-sm"  for="status-inactive">Inactive</label>
+      </div>
+    </div>
+    <div class="col-auto">
+      <div class="btn-group" role="group" aria-label="Sync filter">
+        <input type="radio" class="btn-check" name="sync-filter" id="sync-all"     value=""      checked onchange="filterTable()">
+        <label class="btn btn-outline-secondary btn-sm" for="sync-all">All</label>
+
+        <input type="radio" class="btn-check" name="sync-filter" id="sync-synced"  value="true"  onchange="filterTable()">
+        <label class="btn btn-outline-success btn-sm"   for="sync-synced">Synced</label>
+
+        <input type="radio" class="btn-check" name="sync-filter" id="sync-pending" value="false" onchange="filterTable()">
+        <label class="btn btn-outline-warning btn-sm"   for="sync-pending">Pending</label>
+      </div>
+    </div>
+    <div class="col-auto">
+      <button class="btn btn-sm btn-link text-muted" onclick="clearFilters()">Clear</button>
+    </div>
+  </div>
+
   <%# Bulk form wraps only the action bar — table is outside to avoid nested forms %>
   <%= form_tag bulk_update_users_path, id: "bulk-form" do %>
     <div id="bulk-bar" class="d-none align-items-center gap-2 mb-3 p-2 bg-light border rounded">
@@ -37,9 +72,13 @@
         <th></th>
       </tr>
     </thead>
-    <tbody>
+    <tbody id="members-tbody">
       <% @users.each do |user| %>
-        <tr style="cursor:pointer" onclick="window.location='<%= user_path(user) %>'">
+        <tr style="cursor:pointer"
+            data-name="<%= "#{user.first_name} #{user.last_name}".downcase %>"
+            data-active="<%= user.active %>"
+            data-synced="<%= user.synced %>"
+            onclick="window.location='<%= user_path(user) %>'">
           <td onclick="event.stopPropagation()">
             <input type="checkbox" data-user-id="<%= user.id %>"
                    class="form-check-input row-checkbox" onchange="updateBulkBar()">
@@ -81,25 +120,57 @@
       <% end %>
     </tbody>
   </table>
+
+  <p id="no-results" class="text-muted d-none">No members match the current filters.</p>
+
 <% else %>
   <p class="text-muted">No members yet. <%= link_to "Add one", new_user_path %>.</p>
 <% end %>
 
 <script>
+  function filterTable() {
+    const name   = document.getElementById('name-search').value.toLowerCase();
+    const status = document.querySelector('input[name="status-filter"]:checked').value;
+    const sync   = document.querySelector('input[name="sync-filter"]:checked').value;
+    const rows   = document.querySelectorAll('#members-tbody tr');
+    let visible  = 0;
+
+    rows.forEach(row => {
+      const nameMatch   = row.dataset.name.includes(name);
+      const statusMatch = status === '' || row.dataset.active === status;
+      const syncMatch   = sync   === '' || row.dataset.synced === sync;
+      const show        = nameMatch && statusMatch && syncMatch;
+      row.style.display = show ? '' : 'none';
+      if (show) visible++;
+    });
+
+    document.getElementById('visible-count').textContent = visible;
+    document.getElementById('no-results').classList.toggle('d-none', visible > 0);
+    updateBulkBar();
+  }
+
+  function clearFilters() {
+    document.getElementById('name-search').value = '';
+    document.getElementById('status-all').checked = true;
+    document.getElementById('sync-all').checked   = true;
+    filterTable();
+  }
+
   function updateBulkBar() {
     const checked = document.querySelectorAll('.row-checkbox:checked');
-    const total   = document.querySelectorAll('.row-checkbox').length;
+    const visible = document.querySelectorAll('#members-tbody tr:not([style*="display: none"]) .row-checkbox');
     const bar     = document.getElementById('bulk-bar');
     document.getElementById('bulk-count').textContent = checked.length;
     bar.classList.toggle('d-none', checked.length === 0);
     bar.classList.toggle('d-flex', checked.length > 0);
     const selectAll = document.getElementById('select-all');
-    selectAll.checked       = checked.length === total;
-    selectAll.indeterminate = checked.length > 0 && checked.length < total;
+    selectAll.checked       = visible.length > 0 && checked.length === visible.length;
+    selectAll.indeterminate = checked.length > 0 && checked.length < visible.length;
   }
 
   function toggleAll(source) {
-    document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = source.checked);
+    document.querySelectorAll('#members-tbody tr:not([style*="display: none"]) .row-checkbox')
+      .forEach(cb => cb.checked = source.checked);
     updateBulkBar();
   }
 
@@ -108,7 +179,6 @@
     updateBulkBar();
   }
 
-  // Inject selected user IDs into the bulk form before submission
   document.getElementById('bulk-form').addEventListener('submit', function() {
     document.querySelectorAll('.row-checkbox:checked').forEach(function(cb) {
       const input = document.createElement('input');
