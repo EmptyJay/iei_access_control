@@ -72,6 +72,10 @@ class UsersController < ApplicationController
     when "mark_unsynced"
       users.update_all(synced: false)
       notice = "#{users.size} member(s) marked as pending sync."
+    when "delete"
+      count = users.size
+      users.destroy_all
+      notice = "#{count} member(s) deleted."
     else
       return redirect_to users_path, alert: "Unknown action."
     end
