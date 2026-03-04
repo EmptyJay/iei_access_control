@@ -9,24 +9,88 @@
     </div>
   <% end %>
 
-  <div class="mb-3">
-    <%= f.label :name, class: "form-label" %>
-    <%= f.text_field :name, class: "form-control", autofocus: true %>
+  <div class="row">
+    <div class="col-md-6 mb-3">
+      <%= f.label :first_name, class: "form-label" %>
+      <%= f.text_field :first_name, class: "form-control", autofocus: true,
+            autocomplete: "off", data: { "1p-ignore": true } %>
+    </div>
+    <div class="col-md-6 mb-3">
+      <%= f.label :last_name, class: "form-label" %>
+      <%= f.text_field :last_name, class: "form-control",
+            autocomplete: "off", data: { "1p-ignore": true } %>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-4 mb-3">
+      <%= f.label :card_number, "Badge #", class: "form-label" %>
+      <%= f.number_field :card_number, class: "form-control", min: 1,
+            autocomplete: "off", data: { "1p-ignore": true } %>
+    </div>
   </div>
 
   <div class="row">
     <div class="col-md-4 mb-3">
       <%= f.label :slot, class: "form-label" %>
-      <%= f.number_field :slot, class: "form-control", min: 1 %>
+      <div class="input-group">
+        <%= f.number_field :slot, class: "form-control", min: 1,
+              readonly: true, tabindex: -1, style: "pointer-events:none",
+              id: "slot_field" %>
+        <button type="button" class="btn btn-outline-secondary" id="slot_unlock"
+                tabindex="-1" title="Unlock to edit"
+                onclick="
+                  var field = document.getElementById('slot_field');
+                  var locked = field.hasAttribute('readonly');
+                  if (locked) {
+                    field.removeAttribute('readonly');
+                    field.tabIndex = 0;
+                    field.style.pointerEvents = '';
+                    this.textContent = '\uD83D\uDD13';
+                    this.title = 'Lock';
+                    field.focus();
+                  } else {
+                    field.setAttribute('readonly', true);
+                    field.tabIndex = -1;
+                    field.style.pointerEvents = 'none';
+                    this.textContent = '\uD83D\uDD12';
+                    this.title = 'Unlock to edit';
+                  }
+                ">
+          &#x1F512;
+        </button>
+      </div>
       <div class="form-text">Controller memory slot (auto-assigned)</div>
     </div>
     <div class="col-md-4 mb-3">
       <%= f.label :site_code, class: "form-label" %>
-      <%= f.number_field :site_code, class: "form-control", min: 0 %>
-    </div>
-    <div class="col-md-4 mb-3">
-      <%= f.label :card_number, class: "form-label" %>
-      <%= f.number_field :card_number, class: "form-control", min: 1 %>
+      <div class="input-group">
+        <%= f.number_field :site_code, class: "form-control", min: 0,
+              readonly: true, tabindex: -1, style: "pointer-events:none",
+              id: "site_code_field" %>
+        <button type="button" class="btn btn-outline-secondary" id="site_code_unlock"
+                tabindex="-1" title="Unlock to edit"
+                onclick="
+                  var field = document.getElementById('site_code_field');
+                  var locked = field.hasAttribute('readonly');
+                  if (locked) {
+                    field.removeAttribute('readonly');
+                    field.tabIndex = 0;
+                    field.style.pointerEvents = '';
+                    this.textContent = '\uD83D\uDD13';
+                    this.title = 'Lock';
+                    field.focus();
+                  } else {
+                    field.setAttribute('readonly', true);
+                    field.tabIndex = -1;
+                    field.style.pointerEvents = 'none';
+                    this.textContent = '\uD83D\uDD12';
+                    this.title = 'Unlock to edit';
+                  }
+                ">
+          &#x1F512;
+        </button>
+      </div>
     </div>
   </div>
 

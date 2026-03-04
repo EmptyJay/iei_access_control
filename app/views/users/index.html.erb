@@ -2,29 +2,33 @@
 
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h2 class="mb-0">Members <span class="badge bg-secondary fs-6"><%= @users.size %></span></h2>
-  <%= link_to "Add Member", new_user_path, class: "btn btn-primary" %>
+  <div class="d-flex gap-2">
+    <%= link_to "Export CSV", export_users_path, class: "btn btn-outline-secondary" %>
+    <%= link_to "Import CSV", import_users_path, class: "btn btn-outline-primary" %>
+    <%= link_to "Add Member", new_user_path, class: "btn btn-primary" %>
+  </div>
 </div>
 
 <% if @users.any? %>
   <table class="table table-hover align-middle">
     <thead class="table-dark">
       <tr>
+        <th><%= sort_link("First Name", "first_name") %></th>
+        <th><%= sort_link("Last Name", "last_name") %></th>
         <th>Slot</th>
-        <th>Name</th>
-        <th>Card #</th>
-        <th>Site Code</th>
-        <th>Status</th>
-        <th>Synced</th>
+        <th><%= sort_link("Badge #", "card_number") %></th>
+        <th><%= sort_link("Status", "active") %></th>
+        <th><%= sort_link("Synced", "synced") %></th>
         <th></th>
       </tr>
     </thead>
     <tbody>
       <% @users.each do |user| %>
-        <tr>
+        <tr style="cursor:pointer" onclick="window.location='<%= edit_user_path(user) %>'">
+          <td><%= user.first_name %></td>
+          <td><%= user.last_name %></td>
           <td class="text-muted"><%= user.slot %></td>
-          <td><strong><%= user.name %></strong></td>
           <td><code><%= user.card_number %></code></td>
-          <td><%= user.site_code %></td>
           <td>
             <% if user.active? %>
               <span class="badge bg-success">Active</span>
@@ -40,10 +44,13 @@
             <% end %>
           </td>
           <td class="text-end">
-            <%= link_to "Edit", edit_user_path(user), class: "btn btn-sm btn-outline-secondary me-1" %>
-            <%= button_to "Remove", user_path(user), method: :delete,
+            <%= button_to user_path(user), method: :delete,
                   class: "btn btn-sm btn-outline-danger",
-                  form: { data: { turbo_confirm: "Remove #{user.name}?" } } %>
+                  form: { onsubmit: "return confirm('Remove #{user.full_name}?')",
+                          onclick: "event.stopPropagation()" },
+                  title: "Remove #{user.full_name}" do %>
+              <i class="bi bi-trash"></i>
+            <% end %>
           </td>
         </tr>
       <% end %>

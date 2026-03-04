@@ -41,14 +41,18 @@ File.foreach(export_file) do |line|
   next if cols.length < 7          # skip blank/header lines
 
   slot        = cols[0].strip.to_i
-  name        = cols[1].strip
+  raw_name    = cols[1].strip        # "Last, First" format from Hub Manager
   card_number = cols[3].strip.to_i
   site_code   = cols[6].strip.to_i
 
-  next if slot.zero? || name.empty? || card_number.zero?
+  next if slot.zero? || raw_name.empty? || card_number.zero?
+
+  last_name, first_name = raw_name.split(", ", 2)
+  first_name = first_name.to_s.strip
+  last_name  = last_name.to_s.strip
 
   if User.exists?(slot: slot)
-    puts "  SKIP slot #{slot} (#{name}) — already exists"
+    puts "  SKIP slot #{slot} (#{raw_name}) — already exists"
     skipped += 1
     next
   end
@@ -56,7 +60,8 @@ File.foreach(export_file) do |line|
   begin
     User.create!(
       slot:        slot,
-      name:        name,
+      first_name:  first_name,
+      last_name:   last_name,
       site_code:   site_code,
       card_number: card_number,
       active:      true,
@@ -65,7 +70,7 @@ File.foreach(export_file) do |line|
     imported += 1
     print "." if (imported % 50).zero?
   rescue ActiveRecord::RecordInvalid => e
-    puts "\n  ERROR slot #{slot} (#{name}): #{e.message}"
+    puts "\n  ERROR slot #{slot} (#{raw_name}): #{e.message}"
     errors += 1
   end
 end

@@ -1,0 +1,53 @@
+<% content_for :title, "Import Results" %>
+
+<h2 class="mb-4">Import Results</h2>
+
+<div class="row g-3 mb-4">
+  <div class="col-auto">
+    <div class="card text-bg-success text-center px-4 py-3">
+      <div class="fs-2 fw-bold"><%= @results[:imported].size %></div>
+      <div>Imported</div>
+    </div>
+  </div>
+  <div class="col-auto">
+    <div class="card text-bg-warning text-center px-4 py-3">
+      <div class="fs-2 fw-bold"><%= @results[:skipped].size %></div>
+      <div>Skipped</div>
+    </div>
+  </div>
+  <div class="col-auto">
+    <div class="card text-bg-danger text-center px-4 py-3">
+      <div class="fs-2 fw-bold"><%= @results[:errors].size %></div>
+      <div>Errors</div>
+    </div>
+  </div>
+</div>
+
+<% if @results[:skipped].any? %>
+  <h5 class="mt-4">Skipped</h5>
+  <table class="table table-sm">
+    <thead><tr><th>Line</th><th>Name</th><th>Reason</th></tr></thead>
+    <tbody>
+      <% @results[:skipped].each do |r| %>
+        <tr><td><%= r[:line] %></td><td><%= r[:name] %></td><td class="text-muted"><%= r[:reason] %></td></tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
+
+<% if @results[:errors].any? %>
+  <h5 class="mt-4">Errors</h5>
+  <table class="table table-sm">
+    <thead><tr><th>Line</th><th>Name</th><th>Problems</th></tr></thead>
+    <tbody>
+      <% @results[:errors].each do |r| %>
+        <tr><td><%= r[:line] %></td><td><%= r[:name] %></td><td class="text-danger"><%= r[:messages].join(", ") %></td></tr>
+      <% end %>
+    </tbody>
+  </table>
+<% end %>
+
+<div class="mt-4 d-flex gap-2">
+  <%= link_to "View Members", users_path, class: "btn btn-primary" %>
+  <%= link_to "Import Another", import_users_path, class: "btn btn-outline-secondary" %>
+</div>

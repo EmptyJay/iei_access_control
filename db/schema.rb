@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_02_25_150522) do
+ActiveRecord::Schema[8.0].define(version: 2026_03_04_165721) do
   create_table "access_events", force: :cascade do |t|
     t.integer "user_id"
     t.string "event_type", null: false
@@ -30,7 +30,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_25_150522) do
   end
 
   create_table "users", force: :cascade do |t|
-    t.string "name", null: false
     t.integer "slot", null: false
     t.integer "site_code", default: 105, null: false
     t.integer "card_number", null: false
@@ -38,6 +37,8 @@ ActiveRecord::Schema[8.0].define(version: 2026_02_25_150522) do
     t.boolean "synced", default: false, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "first_name", null: false
+    t.string "last_name", null: false
     t.index ["card_number"], name: "index_users_on_card_number", unique: true
     t.index ["slot"], name: "index_users_on_slot", unique: true
   end

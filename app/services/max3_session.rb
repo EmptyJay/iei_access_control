@@ -50,7 +50,7 @@ class Max3Session
       packet   = add_user_packet(user.slot, card, counter: counter)
       send_and_ack(packet)
       user.update!(synced: true)
-      Rails.logger.info "[Max3] Added slot #{user.slot} (#{user.name})"
+      Rails.logger.info "[Max3] Added slot #{user.slot} (#{user.full_name})"
     end
 
     to_delete.each do |user|
