@@ -1,5 +1,5 @@
 class UsersController < ApplicationController
-  before_action :set_user, only: [ :edit, :update, :destroy ]
+  before_action :set_user, only: [ :show, :edit, :update, :destroy ]
 
   SORTABLE_COLUMNS = %w[first_name last_name card_number active synced].freeze
 
@@ -7,6 +7,10 @@ class UsersController < ApplicationController
     @sort      = SORTABLE_COLUMNS.include?(params[:sort]) ? params[:sort] : "last_name"
     @direction = params[:direction] == "desc" ? "desc" : "asc"
     @users     = User.order("#{@sort} #{@direction}")
+  end
+
+  def show
+    @events = @user.access_events.recent.limit(200)
   end
 
   def new

@@ -24,7 +24,7 @@
     </thead>
     <tbody>
       <% @users.each do |user| %>
-        <tr style="cursor:pointer" onclick="window.location='<%= edit_user_path(user) %>'">
+        <tr style="cursor:pointer" onclick="window.location='<%= user_path(user) %>'">
           <td><%= user.first_name %></td>
           <td><%= user.last_name %></td>
           <td class="text-muted"><%= user.slot %></td>

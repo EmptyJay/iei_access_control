@@ -1,0 +1,95 @@
+<% content_for :title, @user.full_name %>
+
+<div class="d-flex justify-content-between align-items-start mb-4">
+  <h2 class="mb-0"><%= @user.full_name %></h2>
+  <div class="d-flex gap-2">
+    <%= link_to "Edit", edit_user_path(@user), class: "btn btn-outline-secondary" %>
+    <%= button_to user_path(@user), method: :delete,
+          class: "btn btn-outline-danger",
+          form: { onsubmit: "return confirm('Remove #{@user.full_name}?')" },
+          title: "Remove #{@user.full_name}" do %>
+      <i class="bi bi-trash"></i>
+    <% end %>
+  </div>
+</div>
+
+<div class="row g-3 mb-5">
+  <div class="col-sm-4 col-lg-2">
+    <div class="card text-center h-100">
+      <div class="card-body">
+        <div class="fs-3 fw-bold"><%= @user.slot %></div>
+        <div class="text-muted small">Slot</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4 col-lg-2">
+    <div class="card text-center h-100">
+      <div class="card-body">
+        <div class="fs-3 fw-bold"><%= @user.card_number %></div>
+        <div class="text-muted small">Badge #</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-4 col-lg-2">
+    <div class="card text-center h-100">
+      <div class="card-body">
+        <div class="fs-3 fw-bold"><%= @user.site_code %></div>
+        <div class="text-muted small">Site Code</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card text-center h-100 <%= @user.active? ? 'border-success' : 'border-secondary' %>">
+      <div class="card-body">
+        <% if @user.active? %>
+          <span class="badge bg-success fs-6">Active</span>
+        <% else %>
+          <span class="badge bg-secondary fs-6">Inactive</span>
+        <% end %>
+        <div class="text-muted small mt-1">Access</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-sm-6 col-lg-3">
+    <div class="card text-center h-100 <%= @user.synced? ? 'border-success' : 'border-warning' %>">
+      <div class="card-body">
+        <% if @user.synced? %>
+          <span class="badge bg-success fs-6">Synced</span>
+        <% else %>
+          <span class="badge bg-warning text-dark fs-6">Pending Sync</span>
+        <% end %>
+        <div class="text-muted small mt-1">Controller</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<h5 class="mb-3">Access History</h5>
+
+<% if @events.any? %>
+  <table class="table table-hover align-middle">
+    <thead class="table-dark">
+      <tr>
+        <th>Time</th>
+        <th>Event</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% @events.each do |event| %>
+        <tr>
+          <td class="text-nowrap text-muted small">
+            <%= event.occurred_at.strftime("%-m/%-d/%Y %-I:%M %p") %>
+          </td>
+          <td><%= event_type_badge(event) %></td>
+        </tr>
+      <% end %>
+    </tbody>
+  </table>
+  <p class="text-muted small">Showing <%= @events.size %> most recent events.</p>
+<% else %>
+  <p class="text-muted">No access events recorded for this member.</p>
+<% end %>
+
+<div class="mt-3">
+  <%= link_to "Back to Members", users_path, class: "btn btn-outline-secondary" %>
+</div>
