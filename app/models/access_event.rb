@@ -9,10 +9,8 @@ class AccessEvent < ApplicationRecord
   scope :denied,   -> { where(event_type: "denied") }
 
   HUMAN_TYPES = {
-    "granted"       => "Access Granted",
-    "denied"        => "Access Denied",
-    "relock"        => "Relock",
-    "remote_unlock" => "Remote Unlock"
+    "granted" => "Access Granted",
+    "denied"  => "Access Denied"
   }.freeze
 
   def human_event_type
