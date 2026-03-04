@@ -55,6 +55,30 @@ class UsersController < ApplicationController
     send_data csv, filename: "members-#{Date.today}.csv", type: "text/csv", disposition: "attachment"
   end
 
+  def bulk_update
+    users = User.where(id: params[:user_ids])
+
+    if users.none?
+      return redirect_to users_path, alert: "No members selected."
+    end
+
+    case params[:bulk_action]
+    when "activate"
+      users.update_all(active: true, synced: false)
+      notice = "#{users.size} member(s) activated."
+    when "deactivate"
+      users.update_all(active: false, synced: false)
+      notice = "#{users.size} member(s) deactivated."
+    when "mark_unsynced"
+      users.update_all(synced: false)
+      notice = "#{users.size} member(s) marked as pending sync."
+    else
+      return redirect_to users_path, alert: "Unknown action."
+    end
+
+    redirect_to users_path, notice: notice
+  end
+
   def import_form
   end
 

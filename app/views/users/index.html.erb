@@ -10,9 +10,24 @@
 </div>
 
 <% if @users.any? %>
+  <%# Bulk form wraps only the action bar — table is outside to avoid nested forms %>
+  <%= form_tag bulk_update_users_path, id: "bulk-form" do %>
+    <div id="bulk-bar" class="d-none align-items-center gap-2 mb-3 p-2 bg-light border rounded">
+      <span class="text-muted small me-1"><span id="bulk-count">0</span> selected</span>
+      <button type="submit" name="bulk_action" value="activate"      class="btn btn-sm btn-success">Activate</button>
+      <button type="submit" name="bulk_action" value="deactivate"    class="btn btn-sm btn-secondary">Deactivate</button>
+      <button type="submit" name="bulk_action" value="mark_unsynced" class="btn btn-sm btn-warning text-dark">Mark Unsynced</button>
+      <button type="button" class="btn btn-sm btn-link text-muted ms-auto" onclick="clearSelection()">Clear</button>
+    </div>
+  <% end %>
+
   <table class="table table-hover align-middle">
     <thead class="table-dark">
       <tr>
+        <th style="width:1%">
+          <input type="checkbox" id="select-all" class="form-check-input"
+                 title="Select all" onclick="toggleAll(this)">
+        </th>
         <th><%= sort_link("First Name", "first_name") %></th>
         <th><%= sort_link("Last Name", "last_name") %></th>
         <th>Slot</th>
@@ -25,6 +40,10 @@
     <tbody>
       <% @users.each do |user| %>
         <tr style="cursor:pointer" onclick="window.location='<%= user_path(user) %>'">
+          <td onclick="event.stopPropagation()">
+            <input type="checkbox" data-user-id="<%= user.id %>"
+                   class="form-check-input row-checkbox" onchange="updateBulkBar()">
+          </td>
           <td><%= user.first_name %></td>
           <td><%= user.last_name %></td>
           <td class="text-muted"><%= user.slot %></td>
@@ -65,3 +84,38 @@
 <% else %>
   <p class="text-muted">No members yet. <%= link_to "Add one", new_user_path %>.</p>
 <% end %>
+
+<script>
+  function updateBulkBar() {
+    const checked = document.querySelectorAll('.row-checkbox:checked');
+    const total   = document.querySelectorAll('.row-checkbox').length;
+    const bar     = document.getElementById('bulk-bar');
+    document.getElementById('bulk-count').textContent = checked.length;
+    bar.classList.toggle('d-none', checked.length === 0);
+    bar.classList.toggle('d-flex', checked.length > 0);
+    const selectAll = document.getElementById('select-all');
+    selectAll.checked       = checked.length === total;
+    selectAll.indeterminate = checked.length > 0 && checked.length < total;
+  }
+
+  function toggleAll(source) {
+    document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = source.checked);
+    updateBulkBar();
+  }
+
+  function clearSelection() {
+    document.querySelectorAll('.row-checkbox, #select-all').forEach(cb => cb.checked = false);
+    updateBulkBar();
+  }
+
+  // Inject selected user IDs into the bulk form before submission
+  document.getElementById('bulk-form').addEventListener('submit', function() {
+    document.querySelectorAll('.row-checkbox:checked').forEach(function(cb) {
+      const input = document.createElement('input');
+      input.type  = 'hidden';
+      input.name  = 'user_ids[]';
+      input.value = cb.dataset.userId;
+      document.getElementById('bulk-form').appendChild(input);
+    });
+  });
+</script>
