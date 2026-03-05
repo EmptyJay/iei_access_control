@@ -119,17 +119,6 @@ class Max3Session
     }
   end
 
-  # Experimental: attempt a remote unlock.
-  # The exact command byte is not confirmed — try 0x02 first.
-  # After calling, fetch_event_log and check for a 0x34 event to confirm.
-  def remote_unlock(command_byte = 0x02)
-    handshake!
-    packet = build_packet([0xC0, command_byte])
-    send_and_ack(packet)
-    send_raw(END_SESSION)
-    Rails.logger.info "[Max3] Remote unlock sent (C0 #{format('%02X', command_byte)})"
-  end
-
   # ── Private ──────────────────────────────────────────────────────────────────
 
   private

@@ -161,12 +161,8 @@ module Max3Protocol
     when 0x11  # Access Granted IN — b1 is the slot number
       user = User.find_by(slot: b1)
       AccessEvent.create!(event_type: "granted", user: user, occurred_at: timestamp)
-    when 0x17  # Relock
-      AccessEvent.create!(event_type: "relock", occurred_at: timestamp)
     when 0x32  # System – Event Log Retrieved (session marker, skip)
       nil
-    when 0x34  # System – Remote Unlock
-      AccessEvent.create!(event_type: "remote_unlock", occurred_at: timestamp)
     else
       event_label = "unknown_0x#{event.to_s(16).upcase.rjust(2, '0')}"
       AccessEvent.create!(event_type: event_label, occurred_at: timestamp)

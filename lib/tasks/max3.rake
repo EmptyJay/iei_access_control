@@ -40,16 +40,6 @@ namespace :max3 do
     puts "Imported #{after - before} new event(s). Total: #{after}"
   end
 
-  desc "Send a remote unlock command (experimental — byte is C0 [BYTE], default 02)"
-  task :unlock, [:byte] => :environment do |_, args|
-    byte = (args[:byte] || "02").to_i(16)
-    puts "Sending remote unlock: C0 #{format('%02X', byte)}"
-    Max3Session.open do |s|
-      s.remote_unlock(byte)
-    end
-    puts "Command sent. Run 'rake max3:fetch_log' to check for a 0x34 event."
-  end
-
   desc "Print rolling counter current value"
   task counter: :environment do
     val = Setting.rolling_counter
