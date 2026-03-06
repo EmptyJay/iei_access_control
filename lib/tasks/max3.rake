@@ -30,6 +30,13 @@ namespace :max3 do
     puts "Sync complete."
   end
 
+  desc "Peek at unread event log pages without advancing the pointer or writing to DB"
+  task peek_log: :environment do
+    Max3Session.open do |s|
+      s.peek_event_log
+    end
+  end
+
   desc "Fetch event log from controller and import as AccessEvents"
   task fetch_log: :environment do
     before = AccessEvent.count

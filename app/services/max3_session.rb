@@ -63,6 +63,41 @@ class Max3Session
     Rails.logger.info "[Max3] Sync complete — #{to_add.count} added, #{to_delete.count} deleted"
   end
 
+  # Read log pages without advancing the pointer or writing to the database.
+  # Prints each page as hex. Safe to run repeatedly — no side effects.
+  def peek_event_log
+    handshake!
+    send_raw(END_SESSION)
+
+    status_packet = recv_packet
+    status = parse_status_response(status_packet)
+
+    unless status
+      Rails.logger.warn "[Max3] Unexpected response after END_SESSION: #{hex_str(status_packet)}"
+      return
+    end
+
+    Rails.logger.info "[Max3] Log start: 0x#{status[:log_start].to_s(16).upcase}, end: 0x#{status[:log_end].to_s(16).upcase}"
+
+    if status[:log_start] == status[:log_end]
+      Rails.logger.info "[Max3] No unread events"
+      return
+    end
+
+    pages_read = 0
+    addr = status[:log_start]
+    while addr < status[:log_end]
+      send_raw(read_log_page_packet(addr))
+      page = recv_packet
+      Rails.logger.info "[Max3] Page 0x#{addr.to_s(16).upcase}: #{hex_str(page)}"
+      addr += 8
+      pages_read += 1
+    end
+
+    Rails.logger.info "[Max3] Peek complete — #{pages_read} page(s), pointer unchanged"
+    # No END_LOG sent — log pointer stays where it is
+  end
+
   # Read all unread event log pages and import them as AccessEvent records.
   def fetch_event_log
     handshake!
