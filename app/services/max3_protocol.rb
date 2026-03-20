@@ -114,20 +114,23 @@ module Max3Protocol
 
   # ── Response Parsing ─────────────────────────────────────────────────────────
 
-  # Parse the status response (cmd 0x11) that follows END_SESSION when log data is available.
-  # Returns a hash with log pointers and current controller time, or nil if not a 0x11 packet.
+  # Parse the status response that follows END_SESSION when log data is available.
+  # The packet has LEN=0x11 (17 bytes); the first payload byte is 0xA1.
+  # Payload layout: [A1 92 80 D1 08 08 00] [log_start_hi log_start_lo] [log_end_hi log_end_lo]
+  #                 [hour] [min] [day] [month] [year_2digit] [00 00]
+  # Returns a hash with log pointers, or nil if not a recognised status packet.
   def parse_status_response(packet)
     payload = packet[5..-3]
-    return nil unless payload&.first == 0x11
+    return nil unless payload&.first == 0xA1
 
     {
-      log_start: (payload[8] << 8) | payload[9],
-      log_end:   (payload[10] << 8) | payload[11],
-      hour:      payload[12],
-      min:       payload[13],
-      day:       payload[14],
-      month:     payload[15],
-      year:      2000 + payload[16]
+      log_start: (payload[7] << 8) | payload[8],
+      log_end:   (payload[9] << 8) | payload[10],
+      hour:      payload[11],
+      min:       payload[12],
+      day:       payload[13],
+      month:     payload[14],
+      year:      2000 + payload[15]
     }
   end
 
