@@ -15,14 +15,11 @@ class User < ApplicationRecord
     "#{first_name} #{last_name}"
   end
 
-  # Returns the lowest integer slot number not currently in use.
+  # Returns the next available Hub Manager User ID slot (5001+).
+  # Existing members imported from Hub Manager have slots in the 5000+ range.
+  # New members added via the web UI are assigned the next slot above the current maximum.
   def self.next_available_slot
-    used = order(:slot).pluck(:slot)
-    candidate = 1
-    used.each do |s|
-      break if s > candidate
-      candidate = s + 1
-    end
-    candidate
+    max = order(:slot).pluck(:slot).select { |s| s >= 5001 }.max
+    (max || 5000) + 1
   end
 end

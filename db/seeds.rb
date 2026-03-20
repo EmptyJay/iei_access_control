@@ -41,7 +41,7 @@ File.foreach(export_file) do |line|
   cols = line.chomp.split("\t")
   next if cols.length < 7          # skip blank/header lines
 
-  slot        = cols[0].strip.to_i
+  slot        = cols[0].strip.to_i + 5000  # Hub Manager User ID = 5000 + Hub Manager DB ID
   raw_name    = cols[1].strip        # "Last, First" format from Hub Manager
   card_number = cols[3].strip.to_i
   site_code   = cols[6].strip.to_i

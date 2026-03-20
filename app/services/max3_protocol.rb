@@ -151,21 +151,21 @@ module Max3Protocol
     payload = packet[5..-3]
     return unless payload&.first == 0x0B
 
-    event = payload[3]
-    b1    = payload[4]
-    hour  = bcd(payload[6])
-    min   = bcd(payload[7])
-    month = bcd(payload[8])
-    day   = bcd(payload[9])
-    year  = 2000 + bcd(payload[10])
+    event   = payload[3]
+    user_id = (payload[4] << 8) | payload[5]  # 16-bit Hub Manager User ID (e.g. 5375)
+    hour    = bcd(payload[6])
+    min     = bcd(payload[7])
+    month   = bcd(payload[8])
+    day     = bcd(payload[9])
+    year    = 2000 + bcd(payload[10])
 
     timestamp = Time.new(year, month, day, hour, min, 0)
 
     case event
     when 0x01  # Access Denied – Invalid Credential
       AccessEvent.create!(event_type: "denied", occurred_at: timestamp)
-    when 0x11  # Access Granted IN — b1 is the slot number
-      user = User.find_by(slot: b1)
+    when 0x11  # Access Granted IN — user_id is the Hub Manager User ID (slot)
+      user = User.find_by(slot: user_id)
       AccessEvent.create!(event_type: "granted", user: user, occurred_at: timestamp)
     when 0x32  # System – Event Log Retrieved (session marker, skip)
       nil

@@ -180,7 +180,8 @@ Payload (21 bytes):
 [21] card_b3    card data byte 3 (LSB)
 ```
 
-**Slot number** is 2 bytes big-endian. All real members use slots up to ~582 (0x0246). For slots ≤ 255, `slot_hi = 0x00`.
+**Slot number** is 2 bytes big-endian. The slot is the Hub Manager User ID (5000 + Hub Manager DB ID).
+For example: Hub Manager DB ID 375 → slot 5375 (0x14FF). This same value appears as b1:b2 in log events.
 
 **Rolling counter** starts at 0xD0 and increments by 1 with each write to any user. It is global across all users, not per-user. The app must track the last value used.
 
@@ -445,7 +446,8 @@ Field order is month then day (not day then month as originally documented).
 | `0x32` | 00 | 00 | System – Event Log Retrieved (session marker) |
 | `0x34` | 00 | 00 | System – Remote Unlock (manual unlock via software) |
 
-For `0x11` events, `b1` contains the controller slot number of the user who was granted access. Look up the user by slot number in the app database.
+For `0x11` events, `b1` and `b2` together form a 16-bit big-endian Hub Manager User ID: `user_id = (b1 << 8) | b2`.
+For example: b1=0x14, b2=0xFF → user_id=5375 → Hub Manager DB ID 375. Look up the user by slot in the app database.
 
 All other event codes (door ajar, auto unlock, REX, etc.) are logged by the controller but will be rare or non-existent in normal card-only operation. Display them as "System Event (0xXX)" with the raw code.
 
