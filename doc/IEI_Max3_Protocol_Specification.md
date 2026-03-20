@@ -429,10 +429,11 @@ CTL → updated status (11) with new start_addr = old end_addr
 ### Log Page Format (8 bytes)
 
 ```
-[event_type] [b1] [b2] [hour] [min] [day] [month] [year_2digit]
+[event_type] [b1] [b2] [hour_bcd] [min_bcd] [month_bcd] [day_bcd] [year_bcd]
 ```
 
-Timestamp fields are plain hexadecimal (not BCD). Hour and min are 24-hour format.
+Timestamp fields are **BCD encoded** (not plain hex). Hour is 24-hour format.
+Field order is month then day (not day then month as originally documented).
 
 ### Event Types
 

@@ -144,17 +144,20 @@ module Max3Protocol
 
   # Parse one log page response (cmd 0x0B) and create an AccessEvent record.
   # Returns the created AccessEvent, or nil for session-marker events (0x32).
+  #
+  # Timestamp fields are BCD-encoded. Field order (verified against live data):
+  #   payload[6]=hour, [7]=min, [8]=month, [9]=day, [10]=year_2digit
   def process_log_page(packet)
     payload = packet[5..-3]
     return unless payload&.first == 0x0B
 
-    event     = payload[3]
-    b1        = payload[4]
-    hour      = payload[6]
-    min       = payload[7]
-    day       = payload[8]
-    month     = payload[9]
-    year      = 2000 + payload[10]
+    event = payload[3]
+    b1    = payload[4]
+    hour  = bcd(payload[6])
+    min   = bcd(payload[7])
+    month = bcd(payload[8])
+    day   = bcd(payload[9])
+    year  = 2000 + bcd(payload[10])
 
     timestamp = Time.new(year, month, day, hour, min, 0)
 
@@ -177,5 +180,10 @@ module Max3Protocol
   # Format a byte array as a hex string for logging/debugging.
   def hex_str(bytes)
     bytes.map { |b| format("%02X", b) }.join(" ")
+  end
+
+  # Decode a BCD-encoded byte to an integer. e.g. 0x19 → 19, 0x44 → 44.
+  def bcd(byte)
+    (byte >> 4) * 10 + (byte & 0x0F)
   end
 end
