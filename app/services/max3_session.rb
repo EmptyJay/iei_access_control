@@ -159,13 +159,22 @@ class Max3Session
   private
 
   def handshake!
-    send_raw(HANDSHAKE_1)
-    status_packet = recv_packet    # 0x05 status/device info
-    Rails.logger.debug "[Max3] Handshake status: #{hex_str(status_packet)}"
+    retries = 0
+    begin
+      send_raw(HANDSHAKE_1)
+      status_packet = recv_packet    # 0x05 status/device info
+      Rails.logger.debug "[Max3] Handshake status: #{hex_str(status_packet)}"
 
-    send_raw(HANDSHAKE_2)
-    ack = recv_packet              # 0x35 handshake ACK
-    Rails.logger.debug "[Max3] Handshake ack: #{hex_str(ack)}"
+      send_raw(HANDSHAKE_2)
+      ack = recv_packet              # 0x35 handshake ACK
+      Rails.logger.debug "[Max3] Handshake ack: #{hex_str(ack)}"
+    rescue RuntimeError => e
+      raise unless e.message.include?("timeout") && retries < 1
+      retries += 1
+      Rails.logger.warn "[Max3] Handshake timeout, retrying..."
+      sleep 0.5
+      retry
+    end
   end
 
   # Send a packet and wait for an ACK. Raises on invalid ACK.

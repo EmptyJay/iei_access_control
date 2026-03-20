@@ -1,17 +1,25 @@
 namespace :max3 do
+  def max3_run
+    yield
+  rescue RuntimeError => e
+    abort "Max3 error: #{e.message}"
+  end
+
   desc "Connect to the controller and print its status (handshake only)"
   task status: :environment do
     port = ENV.fetch("MAX3_PORT", Max3Session::DEFAULT_PORT)
     puts "Connecting to IEI Max3 on #{port}..."
-    Max3Session.open(port) do |s|
-      info = s.door_status(1)
-      if info
-        puts "Door #{info[:door]}:"
-        puts "  Contact:      #{info[:door_closed] ? 'CLOSED' : 'OPEN'}"
-        puts "  REX:          #{info[:rex_open] ? 'OPEN' : 'CLOSED'}"
-        puts "  Program mode: #{info[:program_mode] ? 'ACTIVE' : 'off'}"
-      else
-        puts "Could not parse door status response."
+    max3_run do
+      Max3Session.open(port) do |s|
+        info = s.door_status(1)
+        if info
+          puts "Door #{info[:door]}:"
+          puts "  Contact:      #{info[:door_closed] ? 'CLOSED' : 'OPEN'}"
+          puts "  REX:          #{info[:rex_open] ? 'OPEN' : 'CLOSED'}"
+          puts "  Program mode: #{info[:program_mode] ? 'ACTIVE' : 'off'}"
+        else
+          puts "Could not parse door status response."
+        end
       end
     end
   end
@@ -24,24 +32,30 @@ namespace :max3 do
       puts "Nothing to sync."
       next
     end
-    Max3Session.open do |s|
-      s.sync_users
+    max3_run do
+      Max3Session.open do |s|
+        s.sync_users
+      end
     end
     puts "Sync complete."
   end
 
   desc "Peek at unread event log pages without advancing the pointer or writing to DB"
   task peek_log: :environment do
-    Max3Session.open do |s|
-      s.peek_event_log
+    max3_run do
+      Max3Session.open do |s|
+        s.peek_event_log
+      end
     end
   end
 
   desc "Fetch event log from controller and import as AccessEvents"
   task fetch_log: :environment do
     before = AccessEvent.count
-    Max3Session.open do |s|
-      s.fetch_event_log
+    max3_run do
+      Max3Session.open do |s|
+        s.fetch_event_log
+      end
     end
     after = AccessEvent.count
     puts "Imported #{after - before} new event(s). Total: #{after}"
