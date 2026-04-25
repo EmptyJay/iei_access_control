@@ -7,9 +7,15 @@ class User < ApplicationRecord
   validates :card_number, presence: true, uniqueness: true, numericality: { only_integer: true, greater_than: 0 }
   validates :site_code,   presence: true, numericality: { only_integer: true }
 
+  TIERS = %w[standard officer].freeze
+
+  validates :tier, inclusion: { in: TIERS }
+
   scope :active,       -> { where(active: true) }
   scope :inactive,     -> { where(active: false) }
   scope :pending_sync, -> { where(synced: false) }
+  scope :standard,     -> { where(tier: "standard") }
+  scope :officer,      -> { where(tier: "officer") }
 
   def full_name
     "#{first_name} #{last_name}"

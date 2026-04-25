@@ -83,6 +83,30 @@ namespace :max3 do
     end
   end
 
+  desc "Remove all standard-tier users from controller (officers keep access). Run 'sync' to restore."
+  task lockdown: :environment do
+    officers = User.officer.count
+    standard = User.standard.count
+    if standard.zero?
+      puts "No standard users — nothing to remove."
+      next
+    end
+    puts "Officers keeping access: #{officers}"
+    puts "WARNING: This will remove #{standard} standard user(s) from the controller."
+    print "Type YES to continue: "
+    input = $stdin.gets.to_s.strip
+    unless input == "YES"
+      puts "Aborted."
+      next
+    end
+    max3_run do
+      Max3Session.open do |s|
+        removed = s.lockdown
+        puts "Lockdown active — #{removed} user(s) removed. Run 'rake max3:sync' to restore access."
+      end
+    end
+  end
+
   desc "Print rolling counter current value"
   task counter: :environment do
     val = Setting.rolling_counter

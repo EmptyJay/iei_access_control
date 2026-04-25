@@ -155,6 +155,26 @@ class Max3Session
     slots.size
   end
 
+  # Remove all standard-tier users from the controller and mark them synced: false.
+  # Officers are untouched. Run sync_users afterward to restore access.
+  # Returns the number of slots removed.
+  def lockdown
+    slots = User.standard.pluck(:slot)
+    raise "No standard users in database" if slots.empty?
+
+    handshake!
+
+    slots.each do |slot|
+      send_and_ack(delete_user_packet(slot))
+      Rails.logger.info "[Max3] Lockdown: removed slot #{slot}"
+    end
+
+    send_raw(END_SESSION)
+    User.standard.update_all(synced: false)
+    Rails.logger.info "[Max3] Lockdown complete — #{slots.size} slot(s) removed"
+    slots.size
+  end
+
   # Request door status (contact state, REX, program mode).
   # Returns the raw 0x92 response payload hash, or nil on error.
   def door_status(door_number = 1)
