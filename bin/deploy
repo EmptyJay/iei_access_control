@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SERVICE="iei_access_control"   # systemd unit name — adjust if different
+APP_DIR="/opt/iei"
+RAILS_ENV="production"
+
+export RAILS_ENV
+
+cd "$APP_DIR"
+
+echo "==> Pulling latest code..."
+git pull
+
+echo "==> Installing gems..."
+bundle install --without development test
+
+echo "==> Running migrations..."
+bin/rails db:migrate
+
+echo "==> Precompiling assets..."
+bin/rails assets:precompile
+
+echo "==> Restarting $SERVICE..."
+sudo systemctl restart "$SERVICE"
+
+echo "==> Done. Service status:"
+systemctl status "$SERVICE" --no-pager -l
