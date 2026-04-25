@@ -133,6 +133,28 @@ class Max3Session
     Rails.logger.info "[Max3] Imported #{pages_read} log pages"
   end
 
+  # Delete every slot that exists in the local database from the controller.
+  # After completion all users are marked synced: false so the next sync
+  # will re-add whichever ones are still active.
+  #
+  # Returns the number of slots deleted.
+  def clear_all_users
+    slots = User.pluck(:slot)
+    raise "No users in database to clear" if slots.empty?
+
+    handshake!
+
+    slots.each do |slot|
+      send_and_ack(delete_user_packet(slot))
+      Rails.logger.info "[Max3] Cleared slot #{slot}"
+    end
+
+    send_raw(END_SESSION)
+    User.update_all(synced: false)
+    Rails.logger.info "[Max3] Cleared #{slots.size} slot(s) from controller"
+    slots.size
+  end
+
   # Request door status (contact state, REX, program mode).
   # Returns the raw 0x92 response payload hash, or nil on error.
   def door_status(door_number = 1)

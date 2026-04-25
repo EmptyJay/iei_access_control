@@ -61,6 +61,28 @@ namespace :max3 do
     puts "Imported #{after - before} new event(s). Total: #{after}"
   end
 
+  desc "Delete all users from the controller and mark them unsynced (use 'sync' to re-add active ones)"
+  task clear_users: :environment do
+    count = User.count
+    if count.zero?
+      puts "No users in database — nothing to clear."
+      next
+    end
+    puts "WARNING: This will delete all #{count} user(s) from the controller."
+    print "Type YES to continue: "
+    input = $stdin.gets.to_s.strip
+    unless input == "YES"
+      puts "Aborted."
+      next
+    end
+    max3_run do
+      Max3Session.open do |s|
+        cleared = s.clear_all_users
+        puts "Cleared #{cleared} slot(s). Run 'rake max3:sync' to re-add active members."
+      end
+    end
+  end
+
   desc "Print rolling counter current value"
   task counter: :environment do
     val = Setting.rolling_counter
