@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SERVICE="iei_access_control"   # systemd unit name — adjust if different
+SERVICE="iei"   # systemd unit name
 APP_DIR="/opt/iei"
 RAILS_ENV="production"
 
