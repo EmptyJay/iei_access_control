@@ -53,5 +53,17 @@
     </div>
 
     <script src="/vendor/bootstrap.bundle.min.js"></script>
+
+    <div id="loading-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; flex-direction:column; gap:1rem;">
+      <div class="spinner-border text-light" style="width:3rem; height:3rem;" role="status"></div>
+      <div id="loading-message" class="text-white fs-5 fw-semibold text-center px-4"></div>
+      <div class="text-white-50 small">Do not close this tab.</div>
+    </div>
+    <script>
+      function showLoading(message) {
+        document.getElementById('loading-message').textContent = message;
+        document.getElementById('loading-overlay').style.display = 'flex';
+      }
+    </script>
   </body>
 </html>

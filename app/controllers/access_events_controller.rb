@@ -1,4 +1,11 @@
 class AccessEventsController < ApplicationController
+  def fetch
+    Max3Session.open { |s| s.fetch_event_log }
+    redirect_to access_events_path, notice: "Event log retrieved."
+  rescue => e
+    redirect_to access_events_path, alert: "Failed to retrieve log: #{e.message}"
+  end
+
   def index
     @events = AccessEvent.recent.includes(:user)
 

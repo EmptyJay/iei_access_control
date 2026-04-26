@@ -10,7 +10,9 @@ Rails.application.routes.draw do
   get  "users/export",      to: "users#export",       as: :export_users
   post "users/bulk_update", to: "users#bulk_update",  as: :bulk_update_users
   resources :users
-  resources :access_events, only: [ :index ]
+  resources :access_events, only: [ :index ] do
+    collection { post :fetch }
+  end
   resource  :settings, only: [ :edit, :update ]
 
   post "sync_users",  to: "dashboard#sync_users",  as: :sync_users
