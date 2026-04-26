@@ -1,5 +1,20 @@
 <% content_for :title, "Dashboard" %>
 
+<%# Full-page loading overlay — shown when a long controller operation is in progress %>
+<div id="loading-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; flex-direction:column; gap:1rem;">
+  <div class="spinner-border text-light" style="width:3rem; height:3rem;" role="status"></div>
+  <div id="loading-message" class="text-white fs-5 fw-semibold text-center px-4"></div>
+  <div class="text-white-50 small">Do not close this tab.</div>
+</div>
+
+<script>
+  function showLoading(message) {
+    document.getElementById('loading-message').textContent = message;
+    var overlay = document.getElementById('loading-overlay');
+    overlay.style.display = 'flex';
+  }
+</script>
+
 <h2 class="mb-4">Dashboard</h2>
 
 <%# Stats row %>
@@ -64,7 +79,7 @@
     </div>
     <%= button_to "Sync Now", sync_users_path,
           class: "btn #{@pending_sync > 0 ? 'btn-warning' : 'btn-outline-secondary'} flex-shrink-0",
-          form: { onsubmit: @pending_sync > 0 ? "return confirm('Push #{@pending_sync} pending change(s) to the controller?')" : nil } %>
+          form: { onsubmit: "showLoading('Syncing #{@pending_sync} member(s) with the controller…'); return true;" } %>
   </div>
 </div>
 
@@ -109,7 +124,7 @@
     </div>
     <%= button_to "Clear Controller", clear_users_path,
           class: "btn btn-danger flex-shrink-0",
-          form: { onsubmit: "return confirm('Remove ALL #{@total_members} member(s) from the controller? Everyone will lose access until re-synced. This cannot be undone.')" } %>
+          form: { onsubmit: "if(!confirm('Remove ALL #{@total_members} member(s) from the controller? Everyone will lose access until re-synced. This cannot be undone.')) return false; showLoading('Clearing #{@total_members} slot(s) from the controller…'); return true;" } %>
   </div>
   <div class="card-body border-top d-flex align-items-center justify-content-between gap-3">
     <div>
@@ -118,7 +133,7 @@
     </div>
     <%= button_to "Force Clear", force_clear_users_path,
           class: "btn btn-danger flex-shrink-0",
-          form: { onsubmit: "return confirm('Walk all 1998 slots and remove every user from the controller hardware? This cannot be undone.')" } %>
+          form: { onsubmit: "if(!confirm('Walk all 1998 slots and remove every user from the controller hardware? This cannot be undone.')) return false; showLoading('Force-clearing all 1998 slots from the controller — this will take 2–3 minutes…'); return true;" } %>
   </div>
   </div>
 </div>
