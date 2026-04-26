@@ -11,7 +11,10 @@ Rails.application.routes.draw do
   post "users/bulk_update", to: "users#bulk_update",  as: :bulk_update_users
   resources :users
   resources :access_events, only: [ :index ] do
-    collection { post :fetch }
+    collection do
+      post :fetch
+      get  :export
+    end
   end
   resource  :settings, only: [ :edit, :update ]
 

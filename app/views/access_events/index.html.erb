@@ -24,6 +24,10 @@
   <div class="col-auto">
     <%= f.submit "Filter", class: "btn btn-outline-secondary" %>
   </div>
+  <div class="col-auto">
+    <%= link_to "Export CSV", export_access_events_path(range: @range, event_type: params[:event_type]),
+          class: "btn btn-outline-success" %>
+  </div>
   <% if params[:event_type].present? || @range != "week" %>
     <div class="col-auto">
       <%= link_to "Clear", access_events_path, class: "btn btn-link text-muted" %>
