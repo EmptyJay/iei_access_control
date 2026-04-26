@@ -19,11 +19,11 @@
 
     <h6>Expected format</h6>
     <p class="text-muted small">Required columns: <code>first_name</code>, <code>last_name</code>, <code>card_number</code><br>
-    Optional: <code>site_code</code> (defaults to 105), <code>active</code> (defaults to true)</p>
-    <pre class="bg-light p-3 rounded small">first_name,last_name,card_number,site_code,active
-Joe,Shiffer,51770,105,true
-Jane,Smith,48210,,
-Bob,Jones,39104,105,false</pre>
+    Optional: <code>site_code</code> (defaults to 105), <code>tier</code> (<code>standard</code> or <code>officer</code>, defaults to standard), <code>active</code> (defaults to true)</p>
+    <pre class="bg-light p-3 rounded small">first_name,last_name,card_number,site_code,tier,active
+Joe,Shiffer,51770,105,officer,true
+Jane,Smith,48210,,,
+Bob,Jones,39104,105,standard,false</pre>
     <p class="text-muted small">Slot numbers are assigned automatically. Members with a card number already in the database are skipped.</p>
   </div>
 </div>
