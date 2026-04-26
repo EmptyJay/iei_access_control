@@ -32,7 +32,7 @@ if ! mount -o "uid=$(id -u $APP_USER),gid=$(id -g $APP_USER)" "$DEVICE" "$MOUNT"
   exit 1
 fi
 
-su -s /bin/bash "$APP_USER" -c \
+su -l -s /bin/bash "$APP_USER" -c \
   "cd $APP && RAILS_ENV=production bin/rails 'backup:usb[$MOUNT]'"
 
 sync
