@@ -34,7 +34,7 @@
     <div class="col-md-4 mb-3">
       <%= f.label :slot, class: "form-label" %>
       <div class="input-group">
-        <%= f.number_field :slot, class: "form-control", min: 1,
+        <%= f.text_field :slot, class: "form-control", inputmode: "numeric", pattern: "[0-9]*",
               readonly: true, tabindex: -1, style: "pointer-events:none",
               id: "slot_field" %>
         <button type="button" class="btn btn-outline-secondary" id="slot_unlock"
@@ -65,7 +65,7 @@
     <div class="col-md-4 mb-3">
       <%= f.label :site_code, class: "form-label" %>
       <div class="input-group">
-        <%= f.number_field :site_code, class: "form-control", min: 0,
+        <%= f.text_field :site_code, class: "form-control", inputmode: "numeric", pattern: "[0-9]*",
               readonly: true, tabindex: -1, style: "pointer-events:none",
               id: "site_code_field" %>
         <button type="button" class="btn btn-outline-secondary" id="site_code_unlock"
