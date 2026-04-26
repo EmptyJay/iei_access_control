@@ -1,0 +1,8 @@
+# udev rule: trigger USB backup when a drive labelled ERCBACKUP is plugged in.
+#
+# Install on Pi (as root):
+#   sudo cp /opt/iei/etc/99-iei-backup.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules
+
+ACTION=="add", SUBSYSTEM=="block", ENV{ID_FS_LABEL}=="ERCBACKUP", \
+  RUN+="/usr/bin/systemd-run --no-block /opt/iei/bin/usb_backup.sh %E{DEVNAME}"
