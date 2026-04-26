@@ -26,4 +26,13 @@ class DashboardController < ApplicationController
   rescue => e
     redirect_to root_path, alert: "Restore failed: #{e.message}"
   end
+
+  def clear_users
+    removed = nil
+    Max3Session.open { |s| removed = s.clear_all_users }
+    Setting["lockdown_active"] = "false"
+    redirect_to root_path, notice: "Controller cleared — #{removed} slot(s) removed. All members marked unsynced."
+  rescue => e
+    redirect_to root_path, alert: "Clear failed: #{e.message}"
+  end
 end
