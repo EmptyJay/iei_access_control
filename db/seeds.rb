@@ -47,7 +47,7 @@ skipped  = 0
 errors   = 0
 
 File.foreach(export_file) do |line|
-  s = line.rstrip("\n")
+  s = line.chomp
   next if s.length < 68
 
   card_number = s[57, 11].strip.to_i
