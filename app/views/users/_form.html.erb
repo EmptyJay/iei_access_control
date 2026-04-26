@@ -94,6 +94,14 @@
     </div>
   </div>
 
+  <div class="row mb-4">
+    <div class="col-md-4">
+      <%= f.label :tier, class: "form-label" %>
+      <%= f.select :tier, User::TIERS.map { |t| [t.capitalize, t] }, {}, class: "form-select" %>
+      <div class="form-text">Officers keep access during lockdown.</div>
+    </div>
+  </div>
+
   <div class="mb-4">
     <div class="form-check form-switch">
       <%= f.check_box :active, class: "form-check-input", role: "switch" %>

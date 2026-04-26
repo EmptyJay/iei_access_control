@@ -1,7 +1,7 @@
 class UsersController < ApplicationController
   before_action :set_user, only: [ :show, :edit, :update, :destroy ]
 
-  SORTABLE_COLUMNS = %w[first_name last_name card_number active synced].freeze
+  SORTABLE_COLUMNS = %w[first_name last_name card_number active synced tier].freeze
 
   def index
     @sort      = SORTABLE_COLUMNS.include?(params[:sort]) ? params[:sort] : "last_name"
@@ -76,6 +76,12 @@ class UsersController < ApplicationController
       count = users.size
       users.destroy_all
       notice = "#{count} member(s) deleted."
+    when "set_officer"
+      users.update_all(tier: "officer")
+      notice = "#{users.size} member(s) set as officers."
+    when "set_standard"
+      users.update_all(tier: "standard")
+      notice = "#{users.size} member(s) set as standard."
     else
       return redirect_to users_path, alert: "Unknown action."
     end
@@ -136,6 +142,6 @@ class UsersController < ApplicationController
   end
 
   def user_params
-    params.expect(user: [ :first_name, :last_name, :slot, :site_code, :card_number, :active ])
+    params.expect(user: [ :first_name, :last_name, :slot, :site_code, :card_number, :active, :tier ])
   end
 end

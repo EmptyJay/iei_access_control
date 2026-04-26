@@ -13,6 +13,9 @@ Rails.application.routes.draw do
   resources :access_events, only: [ :index ]
   resource  :settings, only: [ :edit, :update ]
 
+  post "lockdown", to: "dashboard#lockdown", as: :lockdown
+  post "restore",  to: "dashboard#restore",  as: :restore
+
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   get "up" => "rails/health#show", as: :rails_health_check
 end

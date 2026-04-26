@@ -37,6 +37,16 @@
       </div>
     </div>
     <div class="col-auto">
+      <div class="btn-group" role="group" aria-label="Tier filter">
+        <input type="radio" class="btn-check" name="tier-filter" id="tier-all"      value=""         checked onchange="onFilterChange()">
+        <label class="btn btn-outline-secondary btn-sm" for="tier-all">All</label>
+        <input type="radio" class="btn-check" name="tier-filter" id="tier-standard" value="standard"         onchange="onFilterChange()">
+        <label class="btn btn-outline-secondary btn-sm" for="tier-standard">Standard</label>
+        <input type="radio" class="btn-check" name="tier-filter" id="tier-officer"  value="officer"          onchange="onFilterChange()">
+        <label class="btn btn-outline-primary btn-sm"   for="tier-officer">Officers</label>
+      </div>
+    </div>
+    <div class="col-auto">
       <select id="page-size" class="form-select form-select-sm" style="width:auto" onchange="onPageSizeChange()">
         <option value="25" selected>25 / page</option>
         <option value="50">50 / page</option>
@@ -56,6 +66,8 @@
       <button type="submit" name="bulk_action" value="activate"      class="btn btn-sm btn-success">Activate</button>
       <button type="submit" name="bulk_action" value="deactivate"    class="btn btn-sm btn-secondary">Deactivate</button>
       <button type="submit" name="bulk_action" value="mark_unsynced" class="btn btn-sm btn-warning text-dark">Mark Unsynced</button>
+      <button type="submit" name="bulk_action" value="set_officer"  class="btn btn-sm btn-primary">Set Officer</button>
+      <button type="submit" name="bulk_action" value="set_standard" class="btn btn-sm btn-outline-secondary">Set Standard</button>
       <button type="submit" name="bulk_action" value="delete"
               class="btn btn-sm btn-danger ms-2"
               onclick="return confirm('Permanently delete ' + document.getElementById('bulk-count').textContent + ' member(s)? This cannot be undone.')">
@@ -76,6 +88,7 @@
         <th><%= sort_link("Last Name", "last_name") %></th>
         <th>Slot</th>
         <th><%= sort_link("Badge #", "card_number") %></th>
+        <th><%= sort_link("Tier", "tier") %></th>
         <th><%= sort_link("Status", "active") %></th>
         <th><%= sort_link("Synced", "synced") %></th>
         <th></th>
@@ -87,6 +100,7 @@
             data-name="<%= "#{user.first_name} #{user.last_name}".downcase %>"
             data-active="<%= user.active %>"
             data-synced="<%= user.synced %>"
+            data-tier="<%= user.tier %>"
             onclick="window.location='<%= user_path(user) %>'">
           <td onclick="event.stopPropagation()">
             <input type="checkbox" data-user-id="<%= user.id %>"
@@ -96,6 +110,13 @@
           <td><%= user.last_name %></td>
           <td class="text-muted"><%= user.slot %></td>
           <td><code><%= user.card_number %></code></td>
+          <td>
+            <% if user.tier == "officer" %>
+              <span class="badge bg-primary">Officer</span>
+            <% else %>
+              <span class="badge bg-light text-dark border">Standard</span>
+            <% end %>
+          </td>
           <td>
             <% if user.active? %>
               <span class="badge bg-success">Active</span>
@@ -152,10 +173,12 @@
     const name   = document.getElementById('name-search').value.toLowerCase();
     const status = document.querySelector('input[name="status-filter"]:checked').value;
     const sync   = document.querySelector('input[name="sync-filter"]:checked').value;
+    const tier   = document.querySelector('input[name="tier-filter"]:checked').value;
     return allRows().filter(row =>
       row.dataset.name.includes(name) &&
       (status === '' || row.dataset.active === status) &&
-      (sync   === '' || row.dataset.synced === sync)
+      (sync   === '' || row.dataset.synced === sync) &&
+      (tier   === '' || row.dataset.tier   === tier)
     );
   }
 
@@ -234,6 +257,7 @@
     document.getElementById('name-search').value   = '';
     document.getElementById('status-all').checked  = true;
     document.getElementById('sync-all').checked    = true;
+    document.getElementById('tier-all').checked    = true;
     onFilterChange();
   }
 
