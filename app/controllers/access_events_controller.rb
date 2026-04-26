@@ -38,11 +38,24 @@ class AccessEventsController < ApplicationController
       events = events.where(event_type: params[:event_type])
     end
 
-    case range
-    when "today" then events.where(occurred_at: Time.zone.today.all_day)
-    when "week"  then events.where(occurred_at: 1.week.ago..)
-    when "month" then events.where(occurred_at: 1.month.ago..)
-    else events
+    from = parse_date(params[:from_date])
+    to   = parse_date(params[:to_date])
+
+    if from || to
+      events = events.where(occurred_at: (from || Time.at(0))..(to&.end_of_day || Time.current))
+    else
+      case range
+      when "today" then events.where(occurred_at: Time.zone.today.all_day)
+      when "week"  then events.where(occurred_at: 1.week.ago..)
+      when "month" then events.where(occurred_at: 1.month.ago..)
+      else events
+      end
     end
+  end
+
+  def parse_date(str)
+    Date.parse(str) if str.present?
+  rescue ArgumentError
+    nil
   end
 end
