@@ -1,6 +1,6 @@
 # IEI Max3 / prox.pad plus — Serial Protocol Specification
 
-**Reverse engineered:** February 24, 2026  
+**Reverse engineered:** February 24, 2026; updated April 25, 2026  
 **Hardware:** IEI Max3 v2 door controller  
 **Serial:** RS-485, 19200 baud, 8N1  
 **Tool used:** HHD Device Monitoring Studio (USB-to-RS485 capture)  
@@ -154,64 +154,83 @@ All time fields are plain hexadecimal (not BCD).
 ### 6.2 Add / Update User (0x90)
 
 ```
-LEN: 15 (21 decimal)
+LEN: 15h (21 decimal)
 Payload (21 bytes):
-[00] 90         command
-[01] 00         fixed
-[02] slot_hi    upper byte of slot number
-[03] slot_lo    lower byte of slot number
-[04] pin_flag   0x21 = no PIN, 0x31 = has PIN (not used in card-only setup)
-[05] 84         fixed
-[06] 00         fixed
-[07] tz_index   access level / timezone index (01 for 24-Hour / ERC Members)
-[08] 00         fixed
-[09] 00         fixed
-[10] 00         fixed
-[11] 15         fixed
-[12] counter    rolling counter, increments with each write (D0, D1, D2...)
-[13] 0F         PIN byte 1 (0x0F when no PIN)
-[14] FF         PIN byte 2 (0xFF when no PIN)
-[15] FF         PIN byte 3 (0xFF when no PIN)
-[16] 00         fixed
-[17] 00         fixed
-[18] card_b0    card data byte 0 (MSB)
-[19] card_b1    card data byte 1
-[20] card_b2    card data byte 2
-[21] card_b3    card data byte 3 (LSB)
+[0]  90          command
+[1]  slot_hi     upper byte of slot number
+[2]  slot_lo     lower byte of slot number
+[3]  type_byte   0x21=standard user, 0x11=master PIN (slot 1), 0x01=master card (slot 2)
+[4]  access_byte 0x04=standard access level, 0x84=alternate access level, 0x01=master
+[5]  00          fixed
+[6]  tz_index    time zone: 0x01=24-Hour, 0xFF=all zones (master users only)
+[7]  00          fixed
+[8]  00          fixed
+[9]  00          fixed
+[10] counter_hi  high byte of 16-bit rolling write counter
+[11] counter_lo  low byte of 16-bit rolling write counter
+[12] pin_flag    0x0F=no PIN, 0xF0=has PIN
+[13] pin_bcd1    BCD digit pair 1 (e.g. 0x22 = "22"), or 0xFF if no PIN
+[14] pin_bcd2    BCD digit pair 2 (e.g. 0x38 = "38" → full PIN "2238"), or 0xFF
+[15] padding     0x00 for regular users; 0xFF for master slots 1–2
+[16] padding     0x00 for regular users; 0xFF for master slots 1–2
+[17] card_b0     card data byte 0 (MSB), or 0xFF if no card
+[18] card_b1     card data byte 1, or 0xFF
+[19] card_b2     card data byte 2, or 0xFF
+[20] card_b3     card data byte 3 (LSB), or 0xFF
 ```
 
-**Slot number** is 2 bytes big-endian. The slot is the Hub Manager User ID (5000 + Hub Manager DB ID).
-For example: Hub Manager DB ID 375 → slot 5375 (0x14FF). This same value appears as b1:b2 in log events.
+**Slot number** is 2 bytes big-endian. Slots 1 and 2 are reserved master users (see Section 10). Regular members use slots 3+. The Hub Manager assigns slots equal to the user's DB ID (which started at 1 and has gaps from deleted users). All observed regular slots are ≤ 582.
 
-**Rolling counter** starts at 0xD0 and increments by 1 with each write to any user. It is global across all users, not per-user. The app must track the last value used.
+**Rolling counter** at bytes [10–11] is a 16-bit big-endian value that increments globally with each write to any slot. Hub Manager uses a monotonic counter across the entire session. The app uses a simplified approach: byte[10] fixed at 0x15, byte[11] = 8-bit rolling counter stored in the database (starts at 0xD0, wraps at 0xFF→0x00). This is functionally sufficient — the controller only needs the counter to differ between successive writes to the same slot.
 
-**Access level index:** All ERC members use index `0x01` (24-Hour, all days). No other index is needed.
+**Access byte [4]:** Hub Manager uses `0x04` for the vast majority of users and `0x84` for a minority (likely those on a different access-level profile). The app uses `0x84` for all users, which is acceptable since access control is managed by deleting/re-adding users rather than by access-level assignment.
+
+**Type byte [3]:** The app always uses `0x21`. Values `0x11` and `0x01` are specific to the pre-programmed master slots and should never be written by the app.
+
+**tz_index:** All regular users use `0x01` (24-Hour, all days). Master slots use `0xFF` (all zones).
 
 #### Card Data Encoding (26-bit HID Prox)
+
+The 26-bit Wiegand format includes facility code, card number, and parity bits packed into a 32-bit word with a fixed format bit at bit 26:
+
+```
+bit 26:     1  (HID format indicator, always set)
+bit 25:     EP (even parity over bits 24–13)
+bits 24–17: facility code (site_code, 8 bits)
+bits 16–1:  card number (16 bits)
+bit 0:      OP (odd parity over bits 12–1)
+```
 
 ```python
 def encode_card(site_code, card_number):
     raw = (site_code << 17) | (card_number << 1)
-    return [(raw >> 24) & 0xFF, (raw >> 16) & 0xFF,
-            (raw >> 8) & 0xFF, raw & 0xFF]
+    ep_bits = (raw >> 13) & 0xFFF
+    ep = 1 if bin(ep_bits).count('1') % 2 else 0
+    op_bits = (raw >> 1) & 0xFFF
+    op = 1 if bin(op_bits).count('1') % 2 == 0 else 0
+    full = (1 << 26) | (ep << 25) | raw | op
+    return [(full >> 24) & 0xFF, (full >> 16) & 0xFF,
+            (full >> 8) & 0xFF, full & 0xFF]
 ```
 
 ```ruby
 def encode_card(site_code, card_number)
   raw = (site_code << 17) | (card_number << 1)
-  [(raw >> 24) & 0xFF, (raw >> 16) & 0xFF, (raw >> 8) & 0xFF, raw & 0xFF]
+  ep  = ((raw >> 13) & 0xFFF).to_s(2).count("1").odd? ? 1 : 0
+  op  = ((raw >>  1) & 0xFFF).to_s(2).count("1").even? ? 1 : 0
+  full = (1 << 26) | (ep << 25) | raw | op
+  [(full >> 24) & 0xFF, (full >> 16) & 0xFF, (full >> 8) & 0xFF, full & 0xFF]
 end
 ```
 
-**Examples:**
-| Site | Card | Internal Value | Bytes |
-|------|------|---------------|-------|
-| 1 | 1 | 0006020002 | 06 02 00 02 |
-| 1 | 2 | 0006020004 | 06 02 00 04 |
-| 105 | 51770 | 0004D39475 | 04 D3 94 75 |
-| 105 | 15193 | 0004D2EBB2 | (calculated) |
+**Examples (site code 105):**
+| Site | Card | Encoded bytes |
+|------|------|---------------|
+| 105 | 51770 | `04 D3 94 75` |
+| 1 | 1 | `06 02 00 02` |
+| 1 | 2 | `06 02 00 04` |
 
-All real ERC members use site code **105**.
+All real ERC members use site code **105**. Their card bytes always begin with `04 D3...`.
 
 ---
 
@@ -219,10 +238,10 @@ All real ERC members use site code **105**.
 
 ```
 LEN: 03
-Payload: 93 00 [slot_lo]
+Payload: 93 [slot_hi] [slot_lo]
 ```
 
-For slots ≤ 255, the format is always `93 00 [slot]`. For slots > 255 (not seen in real data), it would be `93 [slot_hi] [slot_lo]`.
+The slot is always 2 bytes big-endian regardless of value. Hub Manager walks a range of slot numbers during a full export (observed: slots 73–2000) to clear all possible occupied slots before re-adding users.
 
 Controller responds with ACK echoing the CRC of the delete command.
 
@@ -247,29 +266,71 @@ Payload: B0 [index] [days_mask] [hour_start] [min_start] [hour_stop] [min_stop]
 | 6 (0x40) | Saturday |
 | 7 (0x80) | Holiday |
 
-Times are plain hex (24-hour). 0x00 = midnight, 0x17 = 23:00.
+Times are plain hex (24-hour). `0x00:0x00` = midnight, `0x23:0x59` = 23:59.
 
 **Examples:**
-- 24 Hour (all days, midnight to midnight): `B0 01 FF 00 00 00 00`
-- Mon–Fri 12AM–12AM: `B0 02 3E 00 00 00 00` (0x3E = 0b00111110)
-- Mon/Wed/Fri/Hol 7AM–9PM: `B0 03 AA 07 00 21 00` (0xAA = 0b10101010)
+- 24 Hour (all days, midnight to 23:59): `B0 01 FF 00 00 23 59`
+- Clear timezone slot (unused): `B0 [index] FF FF FF FF FF`
 
-For the app, only timezone index `0x01` (24 Hour) is used. It is the built-in default and does not need to be written.
-
----
-
-### 6.5 Delete Timezone (0xB0 with FF payload)
-
-```
-LEN: 07
-Payload: B0 [index] FF FF FF FF FF
-```
-
-Same command as write timezone but with all time/day fields set to `FF`. Only test timezones (index 02, 03) were ever deleted. Index 01 (24 Hour) cannot be deleted.
+During a full export Hub Manager writes timezone index 01 as 24-Hour and clears indices 02–08. For the app, only timezone index `0x01` (24 Hour) is used and does not need to be reprogrammed.
 
 ---
 
-### 6.6 End Session (0xA0)
+### 6.5 Write Access Level (0xB3)
+
+```
+LEN: 05
+Payload: B3 [index] [b1] [b2] [b3] [b4]
+```
+
+Programs one of 32 access level slots. Hub Manager writes all 32 entries (indices 0x01–0x20) with `FF FF FF FF` during a full export (clearing all access level definitions). The payload bytes after the index are not fully decoded; `FF FF FF FF` appears to mean "no restriction / cleared."
+
+The app does not use this command. Access control is managed at the user level by deleting and re-adding users.
+
+---
+
+### 6.6 Write Holiday (0x37)
+
+```
+LEN: 08
+Payload: 37 01 00 [entry_hi] [entry_lo] [month] [day] [year] [flags]
+```
+
+Programs one holiday schedule entry. Hub Manager writes 500 entries (all zeroed = no holidays defined) during a full export. Bytes [1–2] appear fixed as `01 00`; bytes [3–4] are the entry number (1-indexed); remaining bytes define the holiday date/flags (all `00` when clearing).
+
+The app does not use this command.
+
+---
+
+### 6.7 Controller Configuration (0x25)
+
+Five variable-length sub-packets sent during a full export. Sub-command is the second byte (payload[1]).
+
+| Sub-cmd | Full packet |
+|---------|-------------|
+| 0x00 | `24 DB 02 00 0A 25 00 03 05 00 0A 0B FF 04 00 B1 4E` |
+| 0x1C | `24 DB 02 00 06 25 1C 01 03 03 04 BC 7B` |
+| 0x6E | `24 DB 02 00 04 25 6E 00 00 13 4A` |
+| 0x70 | `24 DB 02 00 0D 25 70 F7 00 FE 6F 0C 00 5C 00 23 3F 00 80 74` |
+| 0xF0 | `24 DB 02 00 12 25 F0 00 05 00 05 00 05 00 05 00 05 00 05 00 05 00 05 25 F7` |
+
+Sub-cmd 0xF0 appears to configure door strike timing (repeated pattern of `05 00` × 8, one per door). Sub-cmds 0x00 and 0x70 contain unknown controller parameters. The app does not use any 0x25 sub-commands.
+
+---
+
+### 6.8 Unknown Pre-Master-User Command (0x3A)
+
+```
+LEN: 02
+Payload: 3A F8 01
+Full packet: 24 DB 02 00 03 3A F8 01 96 A1
+```
+
+Sent exactly once during a full export, immediately before writing slot 1 (the master PIN user). Purpose unknown. The app does not use this command.
+
+---
+
+### 6.9 End Session (0xA0)
 
 ```
 LEN: 01
@@ -281,7 +342,7 @@ Sent to close a session. Also used as a keep-alive prefix in the dashboard polli
 
 ---
 
-### 6.7 End Log Read (0xA5)
+### 6.10 End Log Read (0xA5)
 
 ```
 LEN: 01
@@ -293,7 +354,7 @@ Sent after reading all log pages to signal end of log import.
 
 ---
 
-### 6.8 Read Log Page (0x0A)
+### 6.11 Read Log Page (0x0A)
 
 ```
 LEN: 04
@@ -304,7 +365,7 @@ Reads one 8-byte log page from controller memory. The address increments by 8 fo
 
 ---
 
-### 6.9 Door Query (0x91)
+### 6.12 Door Query (0x91)
 
 ```
 LEN: 03
@@ -312,7 +373,7 @@ Payload: 91 00 [door_number]
 Full packet (door 1): 24 DB 02 00 03 91 00 01 41 A4
 ```
 
-Requests status and hardware info for the specified door. Used by Hub Manager's Info dialog. Not required for normal operation but useful for a health check / status page in the app.
+Requests status and hardware info for the specified door. Not required for normal operation but useful for a health check / status page in the app.
 
 Controller responds with cmd `0x92` (see Section 7.4).
 
@@ -327,7 +388,7 @@ LEN: 03
 Payload: 01 [crc_hi] [crc_lo]
 ```
 
-The two bytes echoed are the CRC of the command being acknowledged. Used to confirm receipt of: set_datetime, add user, delete user, write/delete timezone.
+The two bytes echoed are the CRC of the command being acknowledged. Used to confirm receipt of: set_datetime, add user, delete user, write/delete timezone, write access level, write holiday, write config, and the 0x3A command.
 
 ### 7.2 Handshake ACK (0x35)
 
@@ -350,19 +411,11 @@ Returns one 8-byte log page for the requested address. See Section 9 for event c
 
 ```
 LEN: 15 (21 decimal)
-Payload: 92 00 [door_number] [flags1] [flags2] [flags3] 
-         [serial_FF] 00 00 00 
-         [unknown x3] 
-         [master_code_hi_bcd] [master_code_lo_bcd] 
-         FF FF FF FF FF FF
-```
-
 Full captured response (door 1):
-```
 24 DB 02 00 15 92 00 01 11 01 00 FF 00 00 00 13 89 F0 22 38 FF FF FF FF FF FF 9A 7E
 ```
 
-Partially decoded (cross-referenced against Hub Manager Info dialog screenshot):
+Partially decoded:
 
 | Byte(s) | Value | Meaning |
 |---------|-------|---------|
@@ -377,14 +430,14 @@ Partially decoded (cross-referenced against Hub Manager Info dialog screenshot):
 | [13-14] | 22 38 | **Master Code in BCD — 0x22 0x38 = "2238"** |
 | [15-20] | FF x6 | Unused |
 
+**Note:** bytes [10–12] match the counter value of slot 1 (0x1389) plus the pin_flag (0xF0). This region may encode the master user's write counter and PIN flag rather than part number/firmware.
+
 **Known status flags (byte [03]):**
 - Bit 0 = Program Mode Entered
 - Bit 4 = Door Contact CLOSED (0 = OPEN)
 
 **Known status flags (byte [04]):**
 - Bit 0 = REX Input OPEN (0 = CLOSED)
-
-Hub Manager Info dialog also shows: controller type (Max 3 v2), part number (229-0412), firmware rev (01.0B), Passage/Toggle active, Forced Door active, Door Ajar active, Auto Unlock active, Timed Unlock active, Front End Jumper (Wiegand/Keypad), and Door Contact state. Full byte mapping for all these fields was not completed as it is not required for normal app operation.
 
 ---
 
@@ -423,6 +476,38 @@ PC  → end session (A0)
 CTL → updated status (11) with new start_addr = old end_addr
 ```
 
+### 8.3 Full Export / Factory Reset (Hub Manager reference flow)
+
+Observed in capture on 2026-04-25. This is what Hub Manager Pro does when performing a full export to controller. The app does not replicate this flow, but it is documented for completeness.
+
+```
+PC  → handshake (04)
+CTL → status (05)
+PC  → handshake (34)
+CTL → ack (35)
+PC  → set_datetime (28)
+CTL → ack (01)
+PC  → write timezone (B0) × 8   [index 01 = 24-Hour; indices 02-08 cleared]
+CTL → ack (01) × 8
+PC  → controller config (25) × 5  [sub-cmds 00, 1C, 6E, 70, F0]
+CTL → ack (01) × 5
+PC  → unknown command (3A F8 01)
+CTL → ack (01)
+PC  → add user (90) slot 1  [master PIN user: type=0x11, PIN=2238]
+CTL → ack (01)
+PC  → add user (90) slot 2  [master card user: type=0x01, no PIN, no card]
+CTL → ack (01)
+PC  → add user (90) × N    [regular users, slots 3+]
+CTL → ack (01) × N
+PC  → write access level (B3) × 32  [all 32 entries cleared with FF FF FF FF]
+CTL → ack (01) × 32
+PC  → write holiday (37) × 500  [all 500 holiday slots cleared]
+CTL → ack (01) × 500
+PC  → end session (A0)
+```
+
+**Note:** In the captured export, the delete-then-add pattern was not used. The 1791 delete packets (0x93) appear in a separate earlier session that walked slots 73–2000. The full export session itself only adds users. The app's sync approach (add active users, delete inactive ones) is a simplified but functionally equivalent flow.
+
 ---
 
 ## 9. Event Log
@@ -446,14 +531,38 @@ Field order is month then day (not day then month as originally documented).
 | `0x32` | 00 | 00 | System – Event Log Retrieved (session marker) |
 | `0x34` | 00 | 00 | System – Remote Unlock (manual unlock via software) |
 
-For `0x11` events, `b1` and `b2` together form a 16-bit big-endian Hub Manager User ID: `user_id = (b1 << 8) | b2`.
-For example: b1=0x14, b2=0xFF → user_id=5375 → Hub Manager DB ID 375. Look up the user by slot in the app database.
+For `0x11` events, `b1` and `b2` together form a 16-bit big-endian slot number: `slot = (b1 << 8) | b2`. Look up the user by slot in the app database.
 
-All other event codes (door ajar, auto unlock, REX, etc.) are logged by the controller but will be rare or non-existent in normal card-only operation. Display them as "System Event (0xXX)" with the raw code.
+All other event codes (door ajar, auto unlock, REX, etc.) are logged by the controller but rare in normal card-only operation. Display them as "System Event (0xXX)" with the raw code.
 
 ---
 
-## 10. Real-World Data
+## 10. Reserved Master Slots (Slots 1 and 2)
+
+Slots 1 and 2 are pre-programmed master users that the app never touches.
+
+**Slot 1 — Master PIN User:**
+```
+Full packet: 24 DB 02 00 15 90 00 01 11 01 00 FF 00 00 00 13 89 F0 22 38 FF FF FF FF FF FF 21 B3
+Payload:     90 00 01 11 01 00 FF 00 00 00 13 89 F0 22 38 FF FF FF FF FF FF
+```
+- type_byte=0x11, access_byte=0x01, tz_index=0xFF (all zones)
+- pin_flag=0xF0 (has PIN), PIN = BCD "22" "38" = **2238**
+- No card (card bytes = FF FF FF FF FF FF)
+
+**Slot 2 — Secondary Master (no PIN, no card):**
+```
+Full packet: 24 DB 02 00 15 90 00 02 01 01 00 FF 00 00 00 13 8A 0F FF FF FF FF FF FF FF FF 93 6E
+Payload:     90 00 02 01 01 00 FF 00 00 00 13 8A 0F FF FF FF FF FF FF FF FF
+```
+- type_byte=0x01, access_byte=0x01, tz_index=0xFF
+- pin_flag=0x0F (no PIN), no card
+
+The master PIN code (2238) is stored in the controller and used for keypad programming mode. It is transmitted as part of the add_user packet for slot 1 during a full export. It is **not** transmitted during the session handshake — the handshake is fixed bytes with no password field.
+
+---
+
+## 11. Real-World Data
 
 ### Site Configuration
 - **Site name:** ERC
@@ -465,27 +574,30 @@ All other event codes (door ajar, auto unlock, REX, etc.) are logged by the cont
 ### User Database
 - Approximately 530 members
 - All use site code 105
-- Slot numbers range from low single digits up to ~582, with gaps from deleted users
-- No PINs on any real users (card-only access)
-- All use timezone index 01 (24 Hour) and access level 01 (ERC Members)
+- Slot numbers range from 3 up to ~582, with gaps from deleted users
+- Slots 1 and 2 are reserved master users (never managed by app)
+- No PINs on any regular users (card-only access)
+- All use timezone index 01 (24 Hour)
 
 ### Card Encoding for Site 105
-All real member internal card values begin with `0004D3...`. This is because:
+All real member internal card values begin with `04 D3...`. This is because:
 ```
-site=105 (0x69): (105 << 17) = 0x00D20000
-card ranges: ~50500–52035
-result prefix: 0004D3...
+site=105 (0x69): encoded as HID 26-bit Wiegand with parity
+result prefix: 04 D3...
 ```
 
 ### Slot Number Management
 Slot numbers are assigned by Hub Manager and have gaps where users were deleted. The app **must preserve existing slot numbers** exactly — do not reassign. Track which slots are free for new user additions.
 
 ### Rolling Counter
-The rolling counter in byte [12] of the add user command starts at `0xD0` and increments by 1 with each write to any user. It wraps at `0xFF` back to `0x00`. The app must persist this value across sessions.
+The counter at payload bytes [10–11] is 16-bit big-endian in the actual protocol. Hub Manager uses a monotonic counter that increments with every write across all users. The app uses a simplified approach: byte[10] = fixed 0x15, byte[11] = 8-bit counter stored in the `settings` table (starts at 0xD0, wraps at 0xFF→0x00). This deviates from the full protocol but is functionally sufficient.
+
+### Tier System (App-Level Concept)
+The app assigns each user a `tier` of either `standard` or `officer`. This concept does not exist at the controller level — the controller treats all users identically. Tier is enforced purely by the app: during lockdown, standard-tier users are deleted from the controller; officer-tier users remain. Access is restored by re-adding standard users.
 
 ---
 
-## 11. Dashboard Polling (Reference Only)
+## 12. Dashboard Polling (Reference Only)
 
 Hub Manager's Dashboard mode uses a continuous polling loop (~32ms cycle). This is **not needed** for a one-shot Rails app but documented for completeness.
 
@@ -518,18 +630,20 @@ The exact command to trigger a remote unlock was not fully isolated during captu
 
 ---
 
-## 12. Known Unknowns
+## 13. Known Unknowns
 
 | Item | Status | Impact |
 |------|--------|--------|
 | Remote unlock exact command | Not confirmed | Can be found experimentally |
 | Most system event codes (door ajar, auto unlock, etc.) | Unknown | Cosmetic only — display as raw hex |
 | Controller memory capacity / circular buffer wrap behavior | Unknown | Low risk for normal operation |
-| Enable/disable user flag in user record | Not captured | Workaround: delete and re-add |
+| Exact meaning of 0x3A F8 01 command | Unknown | App does not use it; safe to omit |
+| Exact semantics of 0xB3 payload bytes (access level definition) | Unknown | App does not use 0xB3 |
+| Byte [4] in 0x92 door query response at offsets [10-12] | Unclear | May overlap counter/pin_flag of slot 1 |
 
 ---
 
-## 13. Reference Packets
+## 14. Reference Packets
 
 ### Handshake (always identical)
 ```
@@ -554,17 +668,55 @@ CTL → 24 DB 02 00 04 35 01 00 00 BF B7
 24 DB 02 00 09 28 36 50 20 03 24 02 26 00 E1 DB
 ```
 
-### Add User Example (slot 0x42, site 105 card 51809, no PIN, tz 01, counter D2)
+### Add User Example — slot 3, site 105, standard user (from full export)
+```
+24 DB 02 00 15 90 00 03 21 04 00 01 00 00 00 14 90 0F FF FF 00 00 04 D3 8E 11 C5 E8
+```
+Decoded: slot=3, type=0x21(standard), access=0x04, tz=01, counter=0x1490, no PIN, card=04 D3 8E 11
+
+### Add User Example — slot 1, master PIN user (from full export)
+```
+24 DB 02 00 15 90 00 01 11 01 00 FF 00 00 00 13 89 F0 22 38 FF FF FF FF FF FF 21 B3
+```
+Decoded: slot=1, type=0x11(master PIN), access=0x01, tz=0xFF(all), counter=0x1389, PIN=2238, no card
+
+### Add User Example — app-generated (slot 0x42, site 105, card 51809, counter D2 using app approach)
 ```
 24 DB 02 00 15 90 00 42 21 84 00 01 00 00 00 15 D2 0F FF FF 00 00 04 D3 9A 82 [CRC CRC]
 ```
+Note: this uses byte[4]=0x84 and byte[10]=0x15 (fixed) — the app's simplified approach.
 
-### Delete User Example (slot 0x42)
+### Delete User Example (slot 0x0042)
 ```
 24 DB 02 00 03 93 00 42 57 63
 ```
 
-### Delete Timezone Example (index 02)
+### Delete User Example (slot 0x07D0 = 2000)
+```
+24 DB 02 00 03 93 07 D0 6D 0F
+```
+
+### Write Timezone Example (index 01, 24-Hour)
+```
+24 DB 02 00 07 B0 01 FF 00 00 23 59 8D B9
+```
+
+### Clear Timezone Example (index 02)
 ```
 24 DB 02 00 07 B0 02 FF FF FF FF FF 42 FF
+```
+
+### Write Access Level Example (index 01, cleared)
+```
+24 DB 02 00 06 B3 01 FF FF FF FF 79 E2
+```
+
+### Write Holiday Example (entry 1, cleared)
+```
+24 DB 02 00 09 37 01 00 01 00 00 00 00 00 E0 C7
+```
+
+### Unknown Command 0x3A
+```
+24 DB 02 00 03 3A F8 01 96 A1
 ```
