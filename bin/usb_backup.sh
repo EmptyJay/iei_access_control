@@ -27,7 +27,7 @@ echo "=== $(date '+%Y-%m-%d %H:%M:%S') USB backup started for $DEVICE ==="
 
 mkdir -p "$MOUNT"
 
-if ! mount "$DEVICE" "$MOUNT"; then
+if ! mount -o "uid=$(id -u $APP_USER),gid=$(id -g $APP_USER)" "$DEVICE" "$MOUNT"; then
   echo "ERROR: failed to mount $DEVICE"
   exit 1
 fi
