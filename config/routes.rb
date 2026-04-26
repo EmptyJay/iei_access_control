@@ -15,7 +15,8 @@ Rails.application.routes.draw do
 
   post "lockdown",    to: "dashboard#lockdown",    as: :lockdown
   post "restore",     to: "dashboard#restore",     as: :restore
-  post "clear_users", to: "dashboard#clear_users", as: :clear_users
+  post "clear_users",       to: "dashboard#clear_users",       as: :clear_users
+  post "force_clear_users", to: "dashboard#force_clear_users", as: :force_clear_users
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   get "up" => "rails/health#show", as: :rails_health_check

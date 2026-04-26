@@ -155,6 +155,28 @@ class Max3Session
     slots.size
   end
 
+  # Walk every slot in the given range and send a delete packet for each one,
+  # regardless of what the app database contains. Slots 1 and 2 are always
+  # skipped (reserved master users). Does not read the database; marks all
+  # existing DB users unsynced afterward. Returns the number of slots swept.
+  def force_clear_all_users(first: 3, last: 2000)
+    first = [first, 3].max  # never touch slots 1 or 2
+
+    handshake!
+
+    swept = 0
+    (first..last).each do |slot|
+      send_and_ack(delete_user_packet(slot))
+      swept += 1
+      Rails.logger.info "[Max3] Force-clear: slot #{slot}/#{last}" if swept % 100 == 0
+    end
+
+    send_raw(END_SESSION)
+    User.update_all(synced: false)
+    Rails.logger.info "[Max3] Force-clear complete — swept slots #{first}–#{last} (#{swept} packets)"
+    swept
+  end
+
   # Remove all standard-tier users from the controller and mark them synced: false.
   # Officers are untouched. Run sync_users afterward to restore access.
   # Returns the number of slots removed.

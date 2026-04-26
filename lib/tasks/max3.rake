@@ -107,6 +107,27 @@ namespace :max3 do
     end
   end
 
+  desc "Walk all slots 3–2000 and delete each from the controller, regardless of DB contents"
+  task force_clear: :environment do
+    first = 3
+    last  = 2000
+    puts "WARNING: This will send #{last - first + 1} delete packets to the controller,"
+    puts "removing every user in slots #{first}–#{last} whether or not the app knows about them."
+    puts "Slots 1 and 2 (master users) are never touched."
+    print "Type YES to continue: "
+    input = $stdin.gets.to_s.strip
+    unless input == "YES"
+      puts "Aborted."
+      next
+    end
+    max3_run do
+      Max3Session.open do |s|
+        swept = s.force_clear_all_users(first: first, last: last)
+        puts "Force-clear complete — #{swept} slot(s) swept. Run 'rake max3:sync' to re-add active members."
+      end
+    end
+  end
+
   desc "Print rolling counter current value"
   task counter: :environment do
     val = Setting.rolling_counter
