@@ -32,8 +32,15 @@ if ! mount -o "uid=$(id -u $APP_USER),gid=$(id -g $APP_USER)" "$DEVICE" "$MOUNT"
   exit 1
 fi
 
-su -l -s /bin/bash "$APP_USER" -c \
-  "cd $APP && RAILS_ENV=production bin/rails 'backup:usb[$MOUNT]'"
+APP_USER_HOME=$(getent passwd "$APP_USER" | cut -d: -f6)
+RBENV_ROOT="$APP_USER_HOME/.rbenv"
+
+su -s /bin/bash "$APP_USER" -c "
+  export RBENV_ROOT=$RBENV_ROOT
+  export PATH=$RBENV_ROOT/bin:$RBENV_ROOT/shims:\$PATH
+  cd $APP
+  RAILS_ENV=production bin/rails 'backup:usb[$MOUNT]'
+"
 
 sync
 umount "$MOUNT"
