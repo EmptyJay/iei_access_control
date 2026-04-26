@@ -96,7 +96,12 @@
 
 <%# Danger zone %>
 <div class="card mb-5 border-danger">
-  <div class="card-header bg-danger text-white fw-semibold">Danger Zone</div>
+  <div class="card-header bg-danger text-white fw-semibold d-flex justify-content-between align-items-center"
+       style="cursor:pointer" data-bs-toggle="collapse" data-bs-target="#danger-zone" aria-expanded="false" aria-controls="danger-zone">
+    Danger Zone
+    <span class="small opacity-75">click to expand</span>
+  </div>
+  <div id="danger-zone" class="collapse">
   <div class="card-body d-flex align-items-center justify-content-between gap-3">
     <div>
       <div class="fw-semibold">Clear All Users from Controller</div>
@@ -114,6 +119,7 @@
     <%= button_to "Force Clear", force_clear_users_path,
           class: "btn btn-danger flex-shrink-0",
           form: { onsubmit: "return confirm('Walk all 1998 slots and remove every user from the controller hardware? This cannot be undone.')" } %>
+  </div>
   </div>
 </div>
 
