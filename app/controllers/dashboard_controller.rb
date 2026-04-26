@@ -10,6 +10,14 @@ class DashboardController < ApplicationController
     @recent_events    = AccessEvent.recent.includes(:user).limit(10)
   end
 
+  def sync_users
+    added = deleted = nil
+    Max3Session.open { |s| s.sync_users }
+    redirect_to root_path, notice: "Sync complete."
+  rescue => e
+    redirect_to root_path, alert: "Sync failed: #{e.message}"
+  end
+
   def lockdown
     removed = nil
     Max3Session.open { |s| removed = s.lockdown }

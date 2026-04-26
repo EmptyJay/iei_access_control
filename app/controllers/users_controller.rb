@@ -31,7 +31,6 @@ class UsersController < ApplicationController
 
   def update
     if @user.update(user_params)
-      @user.update_column(:synced, false) if @user.previous_changes.except("synced", "updated_at").any?
       redirect_to users_path, notice: "#{@user.full_name} updated."
     else
       render :edit, status: :unprocessable_entity
@@ -46,10 +45,10 @@ class UsersController < ApplicationController
   def export
     require "csv"
     csv = CSV.generate(headers: true) do |rows|
-      rows << %w[first_name last_name card_number site_code active slot synced]
+      rows << %w[first_name last_name card_number site_code tier active]
       User.order(:last_name, :first_name).each do |user|
         rows << [ user.first_name, user.last_name, user.card_number,
-                  user.site_code, user.active, user.slot, user.synced ]
+                  user.site_code, user.tier, user.active ]
       end
     end
     send_data csv, filename: "members-#{Date.today}.csv", type: "text/csv", disposition: "attachment"
@@ -104,7 +103,7 @@ class UsersController < ApplicationController
     csv = CSV.parse(params[:file].read, headers: true, skip_blanks: true)
 
     unless (csv.headers & %w[first_name last_name card_number]).length == 3
-      flash.now[:alert] = "CSV must have headers: first_name, last_name, card_number (and optionally site_code, active)."
+      flash.now[:alert] = "CSV must have headers: first_name, last_name, card_number (and optionally site_code, tier, active)."
       return render :import_form, status: :unprocessable_entity
     end
 
@@ -113,6 +112,7 @@ class UsersController < ApplicationController
       last_name   = row["last_name"].to_s.strip
       card_number = row["card_number"].to_s.strip.to_i
       site_code   = row["site_code"].present? ? row["site_code"].strip.to_i : 105
+      tier        = User::TIERS.include?(row["tier"].to_s.strip.downcase) ? row["tier"].strip.downcase : "standard"
       active      = row["active"].blank? || row["active"].strip.downcase != "false"
       display     = "#{first_name} #{last_name}".strip
 
@@ -123,7 +123,7 @@ class UsersController < ApplicationController
 
       user = User.new(first_name: first_name, last_name: last_name,
                       card_number: card_number, site_code: site_code,
-                      active: active, slot: User.next_available_slot)
+                      tier: tier, active: active, slot: User.next_available_slot)
 
       if user.save
         @results[:imported] << { line: line, name: display }

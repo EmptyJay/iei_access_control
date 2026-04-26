@@ -13,6 +13,7 @@ Rails.application.routes.draw do
   resources :access_events, only: [ :index ]
   resource  :settings, only: [ :edit, :update ]
 
+  post "sync_users",  to: "dashboard#sync_users",  as: :sync_users
   post "lockdown",    to: "dashboard#lockdown",    as: :lockdown
   post "restore",     to: "dashboard#restore",     as: :restore
   post "clear_users",       to: "dashboard#clear_users",       as: :clear_users

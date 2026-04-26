@@ -50,6 +50,24 @@
   </div>
 </div>
 
+<%# Sync panel %>
+<div class="card mb-4 <%= @pending_sync > 0 ? 'border-warning' : 'border-secondary' %>">
+  <div class="card-body d-flex align-items-center justify-content-between gap-3">
+    <div>
+      <span class="fw-semibold">Controller Sync</span>
+      <% if @pending_sync > 0 %>
+        <span class="badge bg-warning text-dark ms-2"><%= @pending_sync %> pending</span>
+        <span class="text-muted ms-1">member(s) have changes not yet sent to the controller.</span>
+      <% else %>
+        <span class="text-muted ms-2">All members are in sync with the controller.</span>
+      <% end %>
+    </div>
+    <%= button_to "Sync Now", sync_users_path,
+          class: "btn #{@pending_sync > 0 ? 'btn-warning' : 'btn-outline-secondary'} flex-shrink-0",
+          form: { onsubmit: @pending_sync > 0 ? "return confirm('Push #{@pending_sync} pending change(s) to the controller?')" : nil } %>
+  </div>
+</div>
+
 <%# Lockdown panel %>
 <div class="card mb-5 <%= @lockdown_active ? 'border-danger' : 'border-secondary' %>">
   <div class="card-body d-flex align-items-center justify-content-between gap-3">
