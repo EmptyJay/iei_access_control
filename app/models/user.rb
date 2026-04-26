@@ -17,9 +17,16 @@ class User < ApplicationRecord
   scope :standard,     -> { where(tier: "standard") }
   scope :officer,      -> { where(tier: "officer") }
 
+  before_save :mark_unsynced, if: -> { (changed - %w[synced write_counter updated_at]).any? }
+
   def full_name
     "#{first_name} #{last_name}"
   end
+
+  def mark_unsynced
+    self.synced = false
+  end
+  private :mark_unsynced
 
   # Returns the next available controller slot (3+, skipping reserved slots 1-2).
   # Slots are small sequential integers matching the controller's physical slot addresses.
