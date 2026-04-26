@@ -37,10 +37,12 @@ module Max3Protocol
   # ── Commands ─────────────────────────────────────────────────────────────────
 
   # Set Date/Time (cmd 0x28).
-  # All fields are plain hex (not BCD). wday: 0=Sun..6=Sat.
+  # All time fields are BCD-encoded (confirmed from Hub Manager captures).
+  # wday: 1=Sun..7=Sat (Hub Manager format; Ruby Time#wday is 0=Sun..6=Sat).
   def set_datetime_packet(time = Time.now)
-    payload = [0x28, time.sec, time.min, time.hour,
-               time.wday, time.day, time.month, time.year % 100, 0x00]
+    payload = [0x28, bcd_encode(time.sec), bcd_encode(time.min), bcd_encode(time.hour),
+               time.wday + 1,
+               bcd_encode(time.day), bcd_encode(time.month), bcd_encode(time.year % 100), 0x00]
     build_packet(payload)
   end
 
@@ -151,8 +153,8 @@ module Max3Protocol
     payload = packet[5..-3]
     return unless payload&.first == 0x0B
 
-    event   = payload[3]
-    user_id = (payload[4] << 8) | payload[5]  # 16-bit Hub Manager User ID (e.g. 5375)
+    event          = payload[3]
+    write_counter  = (payload[4] << 8) | payload[5]  # (counter_hi << 8) | counter_lo from add_user
     hour    = bcd(payload[6])
     min     = bcd(payload[7])
     month   = bcd(payload[8])
@@ -164,8 +166,8 @@ module Max3Protocol
     case event
     when 0x01  # Access Denied – Invalid Credential
       AccessEvent.create!(event_type: "denied", occurred_at: timestamp)
-    when 0x11  # Access Granted IN — user_id is the Hub Manager User ID (slot)
-      user = User.find_by(slot: user_id)
+    when 0x11  # Access Granted IN — write_counter is (counter_hi << 8) | counter_lo from add_user packet
+      user = User.find_by(write_counter: write_counter)
       AccessEvent.create!(event_type: "granted", user: user, occurred_at: timestamp)
     when 0x32  # System – Event Log Retrieved (session marker, skip)
       nil
@@ -185,5 +187,10 @@ module Max3Protocol
   # Decode a BCD-encoded byte to an integer. e.g. 0x19 → 19, 0x44 → 44.
   def bcd(byte)
     (byte >> 4) * 10 + (byte & 0x0F)
+  end
+
+  # Encode an integer as a BCD byte. e.g. 19 → 0x19, 44 → 0x44.
+  def bcd_encode(n)
+    ((n / 10) << 4) | (n % 10)
   end
 end

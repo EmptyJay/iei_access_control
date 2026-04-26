@@ -49,7 +49,7 @@ class Max3Session
       card     = encode_card(user.site_code, user.card_number)
       packet   = add_user_packet(user.slot, card, counter: counter)
       send_and_ack(packet)
-      user.update!(synced: true)
+      user.update!(synced: true, write_counter: (0x15 << 8) | counter)
       Rails.logger.info "[Max3] Added slot #{user.slot} (#{user.full_name})"
     end
 
