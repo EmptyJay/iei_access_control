@@ -41,8 +41,8 @@ class Max3Session
     handshake!
     send_and_ack(set_datetime_packet)
 
-    to_add    = User.pending_sync.active
-    to_delete = User.pending_sync.inactive
+    to_add    = User.pending_sync.active.to_a
+    to_delete = User.pending_sync.inactive.to_a
 
     to_add.each do |user|
       counter  = Setting.increment_counter!
