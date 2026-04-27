@@ -1,0 +1,7 @@
+# Drive owner — required for any action to be taken.
+# Lines starting with '#' are comments and are ignored.
+# The first non-comment, non-blank line is used as the actor name.
+# If this file is missing or contains no name, the backup is skipped
+# and a failed-backup event is logged.
+
+Your Name Here

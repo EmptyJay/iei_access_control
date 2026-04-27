@@ -1,7 +1,11 @@
 module AccessEventsHelper
   BADGE_CLASSES = {
-    "granted" => "bg-success",
-    "denied"  => "bg-danger"
+    "granted"       => "bg-success",
+    "denied"        => "bg-danger",
+    "backup"        => "bg-secondary",
+    "backup_failed" => "bg-danger",
+    "lockdown"      => "bg-warning text-dark",
+    "restore"       => "bg-info text-dark"
   }.freeze
 
   def event_type_badge(event)

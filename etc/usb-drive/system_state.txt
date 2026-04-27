@@ -1,0 +1,13 @@
+# ERC system state override — optional.
+# Place this file on the drive to change lockdown state when the drive is inserted.
+# Lines starting with '#' are comments and are ignored.
+# The first non-comment, non-blank line must be one of:
+#
+#   lockdown  — remove standard users from controller (initiate lockdown)
+#   normal    — restore standard users to controller (end lockdown)
+#
+# If this file is absent, lockdown state is left unchanged.
+# Remove this file (or leave only comments) for a backup-only insertion.
+
+# lockdown
+# normal
