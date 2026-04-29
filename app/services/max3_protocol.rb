@@ -39,7 +39,7 @@ module Max3Protocol
   # Set Date/Time (cmd 0x28).
   # All time fields are BCD-encoded (confirmed from Hub Manager captures).
   # wday: 1=Sun..7=Sat (Hub Manager format; Ruby Time#wday is 0=Sun..6=Sat).
-  def set_datetime_packet(time = Time.now)
+  def set_datetime_packet(time = Time.current)
     payload = [0x28, bcd_encode(time.sec), bcd_encode(time.min), bcd_encode(time.hour),
                time.wday + 1,
                bcd_encode(time.day), bcd_encode(time.month), bcd_encode(time.year % 100), 0x00]
@@ -161,7 +161,7 @@ module Max3Protocol
     day     = bcd(payload[9])
     year    = 2000 + bcd(payload[10])
 
-    timestamp = Time.new(year, month, day, hour, min, 0)
+    timestamp = Time.zone.local(year, month, day, hour, min, 0)
 
     case event
     when 0x01  # Access Denied – Invalid Credential

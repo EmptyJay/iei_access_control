@@ -18,10 +18,11 @@ namespace :backup do
     actor = parse_text_file(File.join(mount, "user.txt"))
     unless actor.present?
       puts "ERROR: user.txt missing or contains no name — aborting."
-      AccessEvent.create!(event_type: "backup_failed", occurred_at: Time.now, notes: nil)
+      AccessEvent.create!(event_type: "backup_failed", occurred_at: Time.current, notes: nil)
       exit 1
     end
     puts "Drive owner: #{actor}"
+    AccessEvent.create!(event_type: "backup", occurred_at: Time.current, notes: actor)
 
     # Pull latest events from controller before snapshotting
     puts "Fetching event log from controller..."
@@ -33,7 +34,7 @@ namespace :backup do
       puts "  Continuing backup with existing database records."
     end
 
-    timestamp = Time.now.strftime("%Y%m%d-%H%M%S")
+    timestamp = Time.current.strftime("%Y%m%d-%H%M%S")
     dest = File.join(mount, "iei-backup-#{timestamp}")
     FileUtils.mkdir_p(dest)
     puts "Writing backup to #{dest}"
@@ -68,7 +69,6 @@ namespace :backup do
     end
 
     puts "Backup complete: #{dest}"
-    AccessEvent.create!(event_type: "backup", occurred_at: Time.now, notes: actor)
 
     # Lockdown control via system_state.txt
     control_file = File.join(mount, "system_state.txt")
@@ -88,7 +88,7 @@ namespace :backup do
           begin
             Max3Session.open { |s| s.lockdown }
             Setting["lockdown_active"] = "true"
-            AccessEvent.create!(event_type: "lockdown", occurred_at: Time.now, notes: actor)
+            AccessEvent.create!(event_type: "lockdown", occurred_at: Time.current, notes: actor)
             puts "  Lockdown complete."
           rescue => e
             puts "  ERROR: lockdown failed — #{e.message}"
@@ -100,7 +100,7 @@ namespace :backup do
           begin
             Max3Session.open { |s| s.sync_users }
             Setting["lockdown_active"] = "false"
-            AccessEvent.create!(event_type: "restore", occurred_at: Time.now, notes: actor)
+            AccessEvent.create!(event_type: "restore", occurred_at: Time.current, notes: actor)
             puts "  Restore complete."
           rescue => e
             puts "  ERROR: restore failed — #{e.message}"
