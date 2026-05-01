@@ -1,11 +1,12 @@
 namespace :backup do
   desc "Back up users and event log to a USB drive. Pass mount point as argument (default: /mnt/iei-backup)."
-  task :usb, [:mount] => :environment do |_, args|
+  task :usb, [:mount, :suffix] => :environment do |_, args|
     require "csv"
     require "fileutils"
 
     mount = args[:mount] || "/mnt/iei-backup"
     abort "Mount point #{mount} does not exist" unless Dir.exist?(mount)
+    suffix = args[:suffix] || ""
 
     # user.txt is required — unidentified drives take no action
     def parse_text_file(path)
@@ -35,7 +36,7 @@ namespace :backup do
     end
 
     timestamp = Time.current.strftime("%Y-%m-%d %H%M")
-    dest = File.join(mount, "ERC Door Backup #{timestamp}")
+    dest = File.join(mount, "ERC Door Backup #{timestamp}#{suffix}")
     FileUtils.mkdir_p(dest)
     puts "Writing backup to #{dest}"
 

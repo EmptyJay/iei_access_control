@@ -57,17 +57,26 @@ if [ -f "$BUNDLE" ]; then
   " || DEPLOY_OK=false
 
   if $DEPLOY_OK; then
+    COMMIT_COUNT=$(git -C "$APP" rev-list --count "$OLD_HEAD..HEAD")
     su -s /bin/bash "$APP_USER" -c "
       export RBENV_ROOT=$RBENV_ROOT
       export PATH=$RBENV_ROOT/bin:$RBENV_ROOT/shims:\$PATH
       cd $APP
-      RAILS_ENV=production bin/rails 'deploy:usb[$MOUNT]'
+      RAILS_ENV=production bin/rails 'deploy:usb[$MOUNT,$COMMIT_COUNT]'
     " || DEPLOY_OK=false
   fi
 
   if $DEPLOY_OK; then
     echo "=== Deploy complete — restarting service ==="
     systemctl restart iei
+    echo ""
+    echo "=== $(date '+%Y-%m-%d %H:%M:%S') Post-deploy backup ==="
+    su -s /bin/bash "$APP_USER" -c "
+      export RBENV_ROOT=$RBENV_ROOT
+      export PATH=$RBENV_ROOT/bin:$RBENV_ROOT/shims:\$PATH
+      cd $APP
+      RAILS_ENV=production bin/rails 'backup:usb[$MOUNT,-1]'
+    "
   else
     echo "=== Deploy FAILED — rolling back to $OLD_HEAD ==="
     su -s /bin/bash "$APP_USER" -c "git -C $APP reset --hard $OLD_HEAD" || true
