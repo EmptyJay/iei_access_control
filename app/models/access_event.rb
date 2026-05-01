@@ -14,7 +14,9 @@ class AccessEvent < ApplicationRecord
     "backup"        => "USB Backup",
     "backup_failed" => "USB Backup Failed",
     "lockdown"      => "Lockdown Initiated",
-    "restore"       => "Lockdown Ended"
+    "restore"       => "Lockdown Ended",
+    "deploy"        => "App Updated",
+    "deploy_failed" => "Update Failed"
   }.freeze
 
   def human_event_type

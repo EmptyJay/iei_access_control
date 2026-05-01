@@ -44,6 +44,45 @@ su -s /bin/bash "$APP_USER" -c "
   RAILS_ENV=production bin/rails 'backup:usb[$MOUNT]'
 "
 
+# Deploy if ERC-Update.bundle is present on the drive
+BUNDLE="$MOUNT/ERC-Update.bundle"
+if [ -f "$BUNDLE" ]; then
+  echo ""
+  echo "=== $(date '+%Y-%m-%d %H:%M:%S') Update bundle found — deploying ==="
+  OLD_HEAD=$(git -C "$APP" rev-parse HEAD)
+  DEPLOY_OK=true
+
+  su -s /bin/bash "$APP_USER" -c "
+    git -C $APP fetch $BUNDLE && git -C $APP merge --ff-only FETCH_HEAD
+  " || DEPLOY_OK=false
+
+  if $DEPLOY_OK; then
+    su -s /bin/bash "$APP_USER" -c "
+      export RBENV_ROOT=$RBENV_ROOT
+      export PATH=$RBENV_ROOT/bin:$RBENV_ROOT/shims:\$PATH
+      cd $APP
+      RAILS_ENV=production bin/rails 'deploy:usb[$MOUNT]'
+    " || DEPLOY_OK=false
+  fi
+
+  if $DEPLOY_OK; then
+    echo "=== Deploy complete — restarting service ==="
+    systemctl restart iei
+  else
+    echo "=== Deploy FAILED — rolling back to $OLD_HEAD ==="
+    su -s /bin/bash "$APP_USER" -c "git -C $APP reset --hard $OLD_HEAD" || true
+    su -s /bin/bash "$APP_USER" -c "
+      export RBENV_ROOT=$RBENV_ROOT
+      export PATH=$RBENV_ROOT/bin:$RBENV_ROOT/shims:\$PATH
+      cd $APP
+      RAILS_ENV=production bin/rails runner \
+        'AccessEvent.create!(event_type: \"deploy_failed\", occurred_at: Time.current)'
+    " || true
+    systemctl restart iei
+    echo "=== Rollback complete ==="
+  fi
+fi
+
 sync
 umount "$MOUNT"
 

@@ -192,7 +192,38 @@ MAX3_PORT=/dev/ttyUSB0 RAILS_ENV=production bin/rake max3:status
 
 ---
 
-## Deploying Updates
+## Deploying via USB Drive
+
+Place `ERC-Update.bundle` in the root of the ERCBACKUP drive alongside a valid `user.txt`.
+When the drive is inserted the system runs a full backup first (restore point), then applies
+the update, and deletes the bundle from the drive on success. A failed deploy auto-rolls back
+the git tree and restarts the service.
+
+**Create the bundle on your dev machine:**
+
+```bash
+# Bundle all commits on the current branch not yet on the Pi's main
+git bundle create ERC-Update.bundle origin/main..HEAD
+# Copy ERC-Update.bundle to the ERCBACKUP drive root
+```
+
+**What the Pi does automatically:**
+1. Full backup (controller log + CSVs + SQLite)
+2. `git fetch` + `git merge` the bundle
+3. `bundle install`
+4. `db:migrate`
+5. `assets:precompile`
+6. Restart the `iei` service
+7. Delete `ERC-Update.bundle` from the drive
+8. Log an *App Updated* event (or *Update Failed* on rollback)
+
+**Rollback note:** if any step fails, the git tree is reset to the pre-update commit and the
+service is restarted. If `db:migrate` ran partially before failing, the schema may be ahead
+of the rolled-back code — check `/var/log/iei-backup.log` and recover with a corrected bundle.
+
+---
+
+## Deploying Updates (via SSH / network)
 
 ```bash
 # On your dev machine
@@ -201,7 +232,7 @@ git push origin main
 # On the Pi
 cd /opt/iei
 git pull
-bundle install                                       # only if Gemfile.lock changed
+bundle install                                       # only if Gemfile.lock changed — no flags needed
 RAILS_ENV=production bin/rails db:migrate           # only if there are new migrations
 RAILS_ENV=production bin/rails assets:precompile    # only if CSS/JS changed
 sudo systemctl restart iei
