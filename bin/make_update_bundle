@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# make_update_bundle — create ERC-Update.bundle for USB deployment to the Pi.
+# Run from anywhere inside the repo. Output is written to the repo root.
+#
+# Usage:
+#   bin/make_update_bundle
+#
+# The resulting ERC-Update.bundle should be copied to the root of the ERCBACKUP
+# USB drive alongside a valid user.txt. Insert the drive into the Pi to deploy.
+
+set -euo pipefail
+
+BUNDLE_NAME="ERC-Update.bundle"
+BASE="origin/main"
+
+# Always run from repo root
+REPO_ROOT=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
+cd "$REPO_ROOT"
+
+# Fetch so origin/main reflects the remote's actual state
+echo "Fetching origin..."
+git fetch origin
+
+# Count commits to bundle
+COMMITS=$(git rev-list --count "$BASE..HEAD")
+
+if [ "$COMMITS" -eq 0 ]; then
+  echo "Nothing to bundle — HEAD is already at $BASE. Push or commit something first."
+  exit 1
+fi
+
+git bundle create "$BUNDLE_NAME" "$BASE..HEAD"
+
+echo ""
+echo "Created $BUNDLE_NAME ($COMMITS commit(s) since $BASE)"
+echo "Copy to the ERCBACKUP drive root, then insert the drive into the Pi."
