@@ -34,8 +34,8 @@ namespace :backup do
       puts "  Continuing backup with existing database records."
     end
 
-    timestamp = Time.current.strftime("%Y%m%d-%H%M%S")
-    dest = File.join(mount, "iei-backup-#{timestamp}")
+    timestamp = Time.current.strftime("%Y-%m-%d %H%M")
+    dest = File.join(mount, "ERC Door Backup #{timestamp}")
     FileUtils.mkdir_p(dest)
     puts "Writing backup to #{dest}"
 

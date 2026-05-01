@@ -35,6 +35,8 @@ fi
 APP_USER_HOME=$(getent passwd "$APP_USER" | cut -d: -f6)
 RBENV_ROOT="$APP_USER_HOME/.rbenv"
 
+python3 "$APP/bin/buzzer.py" 0.5 || true
+
 su -s /bin/bash "$APP_USER" -c "
   export RBENV_ROOT=$RBENV_ROOT
   export PATH=$RBENV_ROOT/bin:$RBENV_ROOT/shims:\$PATH
@@ -44,5 +46,7 @@ su -s /bin/bash "$APP_USER" -c "
 
 sync
 umount "$MOUNT"
+
+python3 "$APP/bin/buzzer.py" 2.0 || true
 
 echo "=== Backup complete ==="

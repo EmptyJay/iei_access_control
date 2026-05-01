@@ -156,6 +156,22 @@ Should return a green HTML page.
 
 ---
 
+## GPIO Peripherals
+
+### Piezo Buzzer (KY-006 passive)
+
+Provides audible feedback when a USB backup drive is inserted and when the backup completes.
+
+| KY-006 pin | Pi header pin | Notes |
+|---|---|---|
+| S (signal) | Pin 32 (GPIO 12) | Hardware PWM0 |
+| − (GND) | Pin 30 (GND) | Adjacent to pin 32 |
+| Middle (+) | — | NC — not connected on KY-006 PCB |
+
+Driven by `bin/buzzer.py` (uses `gpiozero`, pre-installed on Pi OS). No additional packages required.
+
+---
+
 ## Seeding Members
 
 Export member data from Hub Manager, then on the Pi:
