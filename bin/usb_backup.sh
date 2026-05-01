@@ -53,6 +53,7 @@ if [ -f "$BUNDLE" ]; then
   DEPLOY_OK=true
 
   su -s /bin/bash "$APP_USER" -c "
+    export HOME=$APP_USER_HOME
     git -C $APP fetch $BUNDLE && git -C $APP merge --ff-only FETCH_HEAD
   " || DEPLOY_OK=false
 
