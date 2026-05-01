@@ -274,5 +274,3 @@ Then deploy normally (`git push` → `git pull` on Pi → `sudo systemctl restar
 | Restart app | `sudo systemctl restart iei` |
 | Rails console | `cd /opt/iei && RAILS_ENV=production bin/rails console` |
 | DB console | `cd /opt/iei && RAILS_ENV=production bin/rails dbconsole` |
-
-# Test Edit
