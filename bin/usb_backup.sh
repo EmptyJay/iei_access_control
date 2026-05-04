@@ -35,7 +35,8 @@ fi
 APP_USER_HOME=$(getent passwd "$APP_USER" | cut -d: -f6)
 RBENV_ROOT="$APP_USER_HOME/.rbenv"
 
-python3 "$APP/bin/buzzer.py" 0.5 || true
+python3 "$APP/bin/buzzer.py" loop &
+BUZZER_PID=$!
 
 su -s /bin/bash "$APP_USER" -c "
   export RBENV_ROOT=$RBENV_ROOT
@@ -93,9 +94,12 @@ if [ -f "$BUNDLE" ]; then
   fi
 fi
 
+kill "$BUZZER_PID" 2>/dev/null || true
+wait "$BUZZER_PID" 2>/dev/null || true
+
 sync
 umount "$MOUNT"
 
-python3 "$APP/bin/buzzer.py" 2.0 || true
+python3 "$APP/bin/buzzer.py" 3.0 || true
 
 echo "=== Backup complete ==="

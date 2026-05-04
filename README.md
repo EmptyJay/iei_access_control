@@ -164,11 +164,11 @@ Provides audible feedback when a USB backup drive is inserted and when the backu
 
 | KY-006 pin | Pi header pin | Notes |
 |---|---|---|
-| S (signal) | Pin 32 (GPIO 12) | Hardware PWM0 |
-| − (GND) | Pin 30 (GND) | Adjacent to pin 32 |
-| Middle (+) | — | NC — not connected on KY-006 PCB |
+| VCC | Pin 1 (3.3V) | |
+| GND | Pin 9 (GND) | |
+| IO (signal) | Pin 11 (GPIO 17) | |
 
-Driven by `bin/buzzer.py` (uses `gpiozero`, pre-installed on Pi OS). No additional packages required.
+Driven by `bin/buzzer.py` (uses `RPi.GPIO`, pre-installed on Pi OS). No additional packages required.
 
 ---
 
