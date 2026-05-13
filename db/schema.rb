@@ -10,13 +10,14 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_03_04_165721) do
+ActiveRecord::Schema[8.0].define(version: 2026_04_27_170405) do
   create_table "access_events", force: :cascade do |t|
     t.integer "user_id"
     t.string "event_type", null: false
     t.datetime "occurred_at", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "notes"
     t.index ["occurred_at"], name: "index_access_events_on_occurred_at"
     t.index ["user_id"], name: "index_access_events_on_user_id"
   end
@@ -39,8 +40,12 @@ ActiveRecord::Schema[8.0].define(version: 2026_03_04_165721) do
     t.datetime "updated_at", null: false
     t.string "first_name", null: false
     t.string "last_name", null: false
+    t.string "tier", default: "standard", null: false
+    t.integer "write_counter"
     t.index ["card_number"], name: "index_users_on_card_number", unique: true
     t.index ["slot"], name: "index_users_on_slot", unique: true
+    t.index ["tier"], name: "index_users_on_tier"
+    t.index ["write_counter"], name: "index_users_on_write_counter"
   end
 
   add_foreign_key "access_events", "users"
