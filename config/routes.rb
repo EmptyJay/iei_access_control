@@ -21,7 +21,9 @@ Rails.application.routes.draw do
       get  :export
     end
   end
-  resource  :settings, only: [ :edit, :update ]
+  resource  :settings, only: [ :edit, :update ] do
+    delete :purge_debug_log, on: :member
+  end
 
   post "sync_users",  to: "dashboard#sync_users",  as: :sync_users
   post "lockdown",    to: "dashboard#lockdown",    as: :lockdown

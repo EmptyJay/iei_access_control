@@ -12,11 +12,29 @@
         <%= form_with url: settings_path, method: :patch do |f| %>
           <div class="mb-3">
             <label class="form-label">Default Site Code</label>
-            <input type="number" name="default_site_code" value="<%= @default_site_code %>"
-                   class="form-control" min="0" autocomplete="off" data-1p-ignore>
+            <input type="text" inputmode="numeric" name="default_site_code" value="<%= @default_site_code %>"
+                   class="form-control" autocomplete="off" data-1p-ignore>
             <div class="form-text">Pre-filled when adding a new member.</div>
           </div>
+          <div class="mb-3">
+            <div class="form-check">
+              <input type="checkbox" name="max3_debug" value="1" id="max3_debug"
+                     class="form-check-input" <%= "checked" if @max3_debug %>>
+              <label class="form-check-label" for="max3_debug">
+                Log verbose serial transcript
+              </label>
+              <div class="form-text">Writes TX/RX hex to <code>log/max3_debug.log</code>. Included in USB backups.</div>
+            </div>
+          </div>
           <%= f.submit "Save", class: "btn btn-primary" %>
+        <% end %>
+        <% if @debug_log_size %>
+          <div class="mt-3 d-flex align-items-center gap-2">
+            <span class="text-muted small">Log: <%= (@debug_log_size / 1024.0).round(1) %> KB</span>
+            <%= button_to "Purge", purge_debug_log_settings_path, method: :delete,
+                  class: "btn btn-sm btn-outline-danger",
+                  data: { confirm: "Delete the debug log file?" } %>
+          </div>
         <% end %>
       </div>
     </div>

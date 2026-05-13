@@ -69,6 +69,13 @@ namespace :backup do
       puts "  production.sqlite3 — not found, skipped"
     end
 
+    # Debug log (if present)
+    debug_log_src = Rails.root.join("log/max3_debug.log")
+    if File.exist?(debug_log_src)
+      FileUtils.cp(debug_log_src, File.join(dest, "max3_debug.log"))
+      puts "  max3_debug.log — #{(File.size(debug_log_src) / 1024.0).round(1)} KB"
+    end
+
     puts "Backup complete: #{dest}"
 
     # Lockdown control via system_state.txt

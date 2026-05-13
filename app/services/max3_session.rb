@@ -26,11 +26,17 @@ class Max3Session
     @port   = port
     @serial = Serial.new(port, BAUD_RATE, 8, :none, 1)
     Rails.logger.info "[Max3] Opened #{port} at #{BAUD_RATE} baud"
+    if Setting["max3_debug"] == "true"
+      @debug_log = Logger.new(Rails.root.join("log/max3_debug.log"))
+      @debug_log.info "=== Session started on #{port} ==="
+    end
   end
 
   def close
     @serial.close
     Rails.logger.info "[Max3] Port closed"
+    @debug_log&.info "=== Session closed ==="
+    @debug_log&.close
   end
 
   # ── Session Flows ────────────────────────────────────────────────────────────
@@ -252,7 +258,7 @@ class Max3Session
   end
 
   def send_raw(bytes)
-    Rails.logger.debug "[Max3] TX: #{hex_str(bytes)}"
+    debug_log "TX: #{hex_str(bytes)}"
     @serial.write(bytes.pack("C*"))
   end
 
@@ -278,7 +284,7 @@ class Max3Session
     rest = read_bytes(len + 2, deadline)  # payload + 2 CRC bytes
 
     packet = [0x24, 0xDB, 0x02, 0x00, len] + rest
-    Rails.logger.debug "[Max3] RX: #{hex_str(packet)}"
+    debug_log "RX: #{hex_str(packet)}"
     packet
   end
 
@@ -300,5 +306,13 @@ class Max3Session
       sleep 0.005 if data.nil? || data.empty?
     end
     buf
+  end
+
+  def debug_log(msg)
+    if @debug_log
+      @debug_log.info(msg)
+    else
+      Rails.logger.debug("[Max3] #{msg}")
+    end
   end
 end
