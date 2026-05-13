@@ -1,0 +1,42 @@
+<% is_new = admin.new_record? %>
+
+<% if admin.errors.any? %>
+  <div class="alert alert-danger py-2">
+    <ul class="mb-0 ps-3">
+      <% admin.errors.full_messages.each do |msg| %>
+        <li><%= msg %></li>
+      <% end %>
+    </ul>
+  </div>
+<% end %>
+
+<div class="mb-3">
+  <%= f.label :name, "Display name", class: "form-label" %>
+  <%= f.text_field :name, class: "form-control", autocomplete: "off" %>
+</div>
+<div class="mb-3">
+  <%= f.label :username, "Username", class: "form-label" %>
+  <%= f.text_field :username, class: "form-control", autocomplete: "off" %>
+</div>
+<div class="mb-3">
+  <%= f.label :role, "Role", class: "form-label" %>
+  <%= f.select :role, [["Admin (full access)", "admin"], ["Viewer (read-only)", "viewer"]], {}, class: "form-select" %>
+</div>
+<% unless is_new %>
+  <div class="mb-3">
+    <div class="form-check">
+      <%= f.check_box :active, class: "form-check-input" %>
+      <%= f.label :active, "Active", class: "form-check-label" %>
+    </div>
+  </div>
+<% end %>
+<hr>
+<p class="text-muted small mb-2"><%= is_new ? "Set a password for this account." : "Leave blank to keep the current password." %></p>
+<div class="mb-3">
+  <%= f.label :password, is_new ? "Password" : "New password", class: "form-label" %>
+  <%= f.password_field :password, class: "form-control", autocomplete: "new-password" %>
+</div>
+<div class="mb-3">
+  <%= f.label :password_confirmation, "Confirm password", class: "form-label" %>
+  <%= f.password_field :password_confirmation, class: "form-control", autocomplete: "new-password" %>
+</div>

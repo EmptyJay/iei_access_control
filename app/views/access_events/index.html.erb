@@ -98,10 +98,12 @@
           <td>
             <% if event.user %>
               <%= link_to event.user.full_name, user_path(event.user) %>
+            <% elsif event.admin %>
+              <span class="text-muted"><%= event.admin.name %></span>
             <% elsif event.notes.present? %>
               <span class="text-muted"><%= event.notes %></span>
             <% else %>
-              <span class="text-muted">Unknown</span>
+              <span class="text-muted">—</span>
             <% end %>
           </td>
           <td><%= event_type_badge(event) %></td>

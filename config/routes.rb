@@ -1,9 +1,14 @@
 Rails.application.routes.draw do
   root "dashboard#index"
 
+  get  "setup", to: "setup#new",    as: :setup
+  post "setup", to: "setup#create"
+
   get    "login",  to: "sessions#new",     as: :login
   post   "login",  to: "sessions#create"
   delete "logout", to: "sessions#destroy", as: :logout
+
+  resources :admins, except: [ :show, :destroy ]
 
   get  "users/import",      to: "users#import_form",  as: :import_users
   post "users/import",      to: "users#import"

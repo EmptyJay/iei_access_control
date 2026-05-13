@@ -1,4 +1,6 @@
 class AccessEventsController < ApplicationController
+  before_action :require_admin_role, only: [ :fetch ]
+
   def fetch
     Max3Session.open { |s| s.fetch_event_log }
     redirect_to access_events_path, notice: "Event log retrieved."
@@ -19,9 +21,10 @@ class AccessEventsController < ApplicationController
     range_label = params[:range] || "all"
 
     csv = CSV.generate(headers: true) do |rows|
-      rows << %w[occurred_at event_type member]
+      rows << %w[occurred_at event_type member admin]
       events.each do |e|
-        rows << [ e.occurred_at.strftime("%Y-%m-%d %H:%M"), e.event_type, e.user&.full_name ]
+        rows << [ e.occurred_at.strftime("%Y-%m-%d %H:%M"), e.event_type,
+                  e.user&.full_name, e.admin&.name ]
       end
     end
 
@@ -32,7 +35,7 @@ class AccessEventsController < ApplicationController
   private
 
   def filtered_events(range)
-    events = AccessEvent.recent.includes(:user)
+    events = AccessEvent.recent.includes(:user, :admin)
 
     if params[:event_type].present? && AccessEvent::HUMAN_TYPES.key?(params[:event_type])
       events = events.where(event_type: params[:event_type])

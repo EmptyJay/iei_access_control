@@ -1,4 +1,6 @@
 class SettingsController < ApplicationController
+  before_action :require_admin_role, only: [ :update ]
+
   def edit
     @default_site_code  = Setting["default_site_code"] || "105"
     @rolling_counter_hex = Setting["rolling_counter"] || "D0"
@@ -9,6 +11,7 @@ class SettingsController < ApplicationController
     site_code = params[:default_site_code].to_s.strip
     if site_code.match?(/\A\d+\z/)
       Setting["default_site_code"] = site_code
+      log_admin_action("settings_changed", notes: "default_site_code = #{site_code}")
       redirect_to edit_settings_path, notice: "Settings saved."
     else
       flash.now[:alert] = "Site code must be a number."

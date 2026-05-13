@@ -6,18 +6,18 @@ class SessionsController < ApplicationController
   end
 
   def create
-    digest = Rails.application.credentials.admin_password_digest
-    if BCrypt::Password.new(digest) == params[:password]
-      session[:authenticated] = true
+    admin = Admin.active.find_by(username: params[:username].to_s.strip.downcase)
+    if admin&.authenticate(params[:password])
+      session[:admin_id] = admin.id
       redirect_to root_path, notice: "Logged in."
     else
-      flash.now[:alert] = "Invalid password."
+      flash.now[:alert] = "Invalid username or password."
       render :new, status: :unprocessable_entity
     end
   end
 
   def destroy
-    session.delete(:authenticated)
+    session.delete(:admin_id)
     redirect_to login_path, notice: "Logged out."
   end
 end

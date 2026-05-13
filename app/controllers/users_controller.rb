@@ -1,4 +1,5 @@
 class UsersController < ApplicationController
+  before_action :require_admin_role, only: [ :new, :create, :edit, :update, :destroy, :bulk_update, :import_form, :import ]
   before_action :set_user, only: [ :show, :edit, :update, :destroy ]
 
   SORTABLE_COLUMNS = %w[first_name last_name card_number active synced tier].freeze
@@ -20,6 +21,7 @@ class UsersController < ApplicationController
   def create
     @user = User.new(user_params)
     if @user.save
+      log_admin_action("member_created", user: @user)
       redirect_to users_path, notice: "#{@user.full_name} added."
     else
       render :new, status: :unprocessable_entity
@@ -31,6 +33,7 @@ class UsersController < ApplicationController
 
   def update
     if @user.update(user_params)
+      log_admin_action("member_updated", user: @user)
       redirect_to users_path, notice: "#{@user.full_name} updated."
     else
       render :edit, status: :unprocessable_entity
@@ -38,8 +41,10 @@ class UsersController < ApplicationController
   end
 
   def destroy
+    name = @user.full_name
     @user.destroy
-    redirect_to users_path, notice: "#{@user.full_name} removed."
+    log_admin_action("member_deleted", notes: name)
+    redirect_to users_path, notice: "#{name} removed."
   end
 
   def export
@@ -85,6 +90,7 @@ class UsersController < ApplicationController
       return redirect_to users_path, alert: "Unknown action."
     end
 
+    log_admin_action("members_bulk", notes: notice)
     redirect_to users_path, notice: notice
   end
 
@@ -132,6 +138,7 @@ class UsersController < ApplicationController
       end
     end
 
+    log_admin_action("members_imported", notes: "#{@results[:imported].size} imported, #{@results[:skipped].size} skipped, #{@results[:errors].size} errors")
     render :import_results
   end
 
