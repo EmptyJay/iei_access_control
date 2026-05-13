@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_04_27_170405) do
+ActiveRecord::Schema[8.0].define(version: 2026_05_13_000001) do
   create_table "access_events", force: :cascade do |t|
     t.integer "user_id"
     t.string "event_type", null: false
@@ -18,8 +18,21 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_27_170405) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "notes"
+    t.integer "admin_id"
+    t.index ["admin_id"], name: "index_access_events_on_admin_id"
     t.index ["occurred_at"], name: "index_access_events_on_occurred_at"
     t.index ["user_id"], name: "index_access_events_on_user_id"
+  end
+
+  create_table "admins", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "username", null: false
+    t.string "password_digest", null: false
+    t.string "role", default: "admin", null: false
+    t.boolean "active", default: true, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["username"], name: "index_admins_on_username", unique: true
   end
 
   create_table "settings", force: :cascade do |t|
@@ -48,5 +61,6 @@ ActiveRecord::Schema[8.0].define(version: 2026_04_27_170405) do
     t.index ["write_counter"], name: "index_users_on_write_counter"
   end
 
+  add_foreign_key "access_events", "admins"
   add_foreign_key "access_events", "users"
 end
