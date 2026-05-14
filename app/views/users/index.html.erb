@@ -121,6 +121,8 @@
           <td>
             <% if user.active? %>
               <span class="badge bg-success">Active</span>
+            <% elsif user.write_counter.present? %>
+              <span class="badge bg-danger">Pending Removal</span>
             <% else %>
               <span class="badge bg-secondary">Inactive</span>
             <% end %>

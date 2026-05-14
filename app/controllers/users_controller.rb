@@ -42,9 +42,15 @@ class UsersController < ApplicationController
 
   def destroy
     name = @user.full_name
-    @user.destroy
-    log_admin_action("member_deleted", notes: name)
-    redirect_to users_path, notice: "#{name} removed."
+    if @user.write_counter.present?
+      @user.update!(active: false)
+      log_admin_action("member_deleted", notes: name)
+      redirect_to users_path, notice: "#{name} queued for removal — will be deleted from the controller on next sync."
+    else
+      @user.destroy
+      log_admin_action("member_deleted", notes: name)
+      redirect_to users_path, notice: "#{name} removed."
+    end
   end
 
   def export
@@ -78,8 +84,9 @@ class UsersController < ApplicationController
       notice = "#{users.size} member(s) marked as pending sync."
     when "delete"
       count = users.size
-      users.destroy_all
-      notice = "#{count} member(s) deleted."
+      users.where(write_counter: nil).destroy_all
+      users.where.not(write_counter: nil).update_all(active: false, synced: false)
+      notice = "#{count} member(s) queued for removal — will be deleted from the controller on next sync."
     when "set_officer"
       users.update_all(tier: "officer")
       notice = "#{users.size} member(s) set as officers."
