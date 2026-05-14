@@ -47,15 +47,17 @@ class Max3Session
     handshake!
     send_and_ack(set_datetime_packet)
 
-    to_add    = User.pending_sync.active.to_a
+    to_add    = User.pending_sync.active.order(:site_code, :card_number).to_a
     to_delete = User.pending_sync.inactive.to_a
 
     to_add.each do |user|
-      counter  = Setting.increment_counter!
-      card     = encode_card(user.site_code, user.card_number)
-      packet   = add_user_packet(user.slot, card, counter: counter)
+      counter     = Setting.increment_counter!
+      counter_hi  = (counter >> 8) & 0xFF
+      counter_lo  = counter & 0xFF
+      card        = encode_card(user.site_code, user.card_number)
+      packet      = add_user_packet(user.slot, card, counter_hi: counter_hi, counter_lo: counter_lo)
       send_and_ack(packet)
-      user.update!(synced: true, write_counter: (0x15 << 8) | counter)
+      user.update!(synced: true, write_counter: counter)
       Rails.logger.info "[Max3] Added slot #{user.slot} (#{user.full_name})"
     end
 

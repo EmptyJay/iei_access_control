@@ -49,9 +49,9 @@
           <dt class="text-muted small">Rolling Counter</dt>
           <dd class="mb-3">
             <span class="font-monospace fs-5"><%= @rolling_counter_hex %></span>
-            <span class="text-muted ms-2">(<%= @rolling_counter_dec %> / 255)</span>
+            <span class="text-muted ms-2">(<%= @rolling_counter_dec %> / 65535)</span>
             <div class="progress mt-1" style="height:6px">
-              <div class="progress-bar" style="width:<%= (@rolling_counter_dec / 255.0 * 100).round %>%"></div>
+              <div class="progress-bar" style="width:<%= (@rolling_counter_dec / 65535.0 * 100).round %>%"></div>
             </div>
             <div class="form-text">Managed automatically by the sync process. Do not edit manually.</div>
           </dd>

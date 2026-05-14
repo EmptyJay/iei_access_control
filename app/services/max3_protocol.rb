@@ -51,16 +51,17 @@ module Max3Protocol
   # slot        — controller slot number (1..582+)
   # card_bytes  — 4-byte array from encode_card()
   # tz_index    — 0x01 for all ERC members (24-Hour / all-day access)
-  # counter     — rolling byte (integer 0..255); use Setting.increment_counter!
+  # counter_hi  — high byte of 16-bit rolling counter
+  # counter_lo  — low byte of 16-bit rolling counter
   #
   # NOTE: the context doc had an extra fixed 0x00 at byte [1] — that was wrong.
   # The correct format confirmed by reference packet: 90 [slot_hi] [slot_lo] ...
-  def add_user_packet(slot, card_bytes, tz_index: 0x01, counter:)
+  def add_user_packet(slot, card_bytes, tz_index: 0x01, counter_hi:, counter_lo:)
     slot_hi = (slot >> 8) & 0xFF
     slot_lo = slot & 0xFF
     payload = [0x90, slot_hi, slot_lo,
                0x21, 0x84, 0x00, tz_index, 0x00, 0x00, 0x00,
-               0x15, counter,
+               counter_hi, counter_lo,
                0x0F, 0xFF, 0xFF,   # no PIN
                0x00, 0x00] + card_bytes
     build_packet(payload)

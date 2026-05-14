@@ -3,7 +3,7 @@ class SettingsController < ApplicationController
 
   def edit
     @default_site_code   = Setting["default_site_code"] || "105"
-    @rolling_counter_hex = Setting["rolling_counter"] || "D0"
+    @rolling_counter_hex = Setting["rolling_counter"] || "15D0"
     @rolling_counter_dec = @rolling_counter_hex.to_i(16)
     @max3_debug          = Setting["max3_debug"] == "true"
     @debug_log_path      = Rails.root.join("log/max3_debug.log")

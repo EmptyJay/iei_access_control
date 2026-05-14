@@ -14,16 +14,16 @@ class Setting < ApplicationRecord
     record.save!
   end
 
-  # Returns current rolling counter as an integer (0..255).
+  # Returns current rolling counter as an integer (0x0000..0xFFFF).
   def self.rolling_counter
-    (self["rolling_counter"] || "D0").to_i(16)
+    (self["rolling_counter"] || "15D0").to_i(16)
   end
 
-  # Increments the counter (wrapping 0xFF -> 0x00) and persists it.
+  # Increments the counter (wrapping 0xFFFF -> 0x0000) and persists it.
   # Returns the value that was consumed (before increment) as an integer.
   def self.increment_counter!
     current = rolling_counter
-    self["rolling_counter"] = format("%02X", (current + 1) & 0xFF)
+    self["rolling_counter"] = format("%04X", (current + 1) & 0xFFFF)
     current
   end
 end
