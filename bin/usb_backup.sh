@@ -50,6 +50,10 @@ BUNDLE="$MOUNT/ERC-Update.bundle"
 if [ -f "$BUNDLE" ]; then
   echo ""
   echo "=== $(date '+%Y-%m-%d %H:%M:%S') Update bundle found — deploying ==="
+  kill "$BUZZER_PID" 2>/dev/null || true
+  wait "$BUZZER_PID" 2>/dev/null || true
+  python3 "$APP/bin/buzzer.py" fast &
+  BUZZER_PID=$!
   OLD_HEAD=$(git -C "$APP" rev-parse HEAD)
   DEPLOY_OK=true
 
