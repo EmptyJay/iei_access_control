@@ -84,11 +84,11 @@
       <% if @lockdown_active %>
         <%= button_to "Restore Access", restore_path,
               class: "btn btn-success",
-              form: { onsubmit: "return confirm('Re-add all standard members to the controller?')" } %>
+              form: { onsubmit: "if(!confirm('Re-add all standard members to the controller?')) return false; showLoading('Restoring access — re-adding standard members…'); return true;" } %>
       <% else %>
         <%= button_to "Lockdown", lockdown_path,
               class: "btn btn-danger",
-              form: { onsubmit: "return confirm('Remove all standard members from the controller? Officers will keep access.')" } %>
+              form: { onsubmit: "if(!confirm('Remove all standard members from the controller? Officers will keep access.')) return false; showLoading('Initiating lockdown — removing standard members…'); return true;" } %>
       <% end %>
     </div>
   </div>
