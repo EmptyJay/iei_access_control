@@ -18,6 +18,7 @@ Rails.application.routes.draw do
   resources :access_events, only: [ :index ] do
     collection do
       post :fetch
+      get  :fetch_stream
       get  :export
     end
   end
@@ -30,6 +31,12 @@ Rails.application.routes.draw do
   post "restore",     to: "dashboard#restore",     as: :restore
   post "clear_users",       to: "dashboard#clear_users",       as: :clear_users
   post "force_clear_users", to: "dashboard#force_clear_users", as: :force_clear_users
+
+  get "sync_stream",        to: "dashboard#sync_stream",        as: :sync_stream
+  get "lockdown_stream",    to: "dashboard#lockdown_stream",    as: :lockdown_stream
+  get "restore_stream",     to: "dashboard#restore_stream",     as: :restore_stream
+  get "clear_stream",       to: "dashboard#clear_stream",       as: :clear_stream
+  get "force_clear_stream", to: "dashboard#force_clear_stream", as: :force_clear_stream
 
   # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
   get "up" => "rails/health#show", as: :rails_health_check

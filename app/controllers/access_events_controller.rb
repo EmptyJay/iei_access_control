@@ -1,11 +1,30 @@
 class AccessEventsController < ApplicationController
-  before_action :require_admin_role, only: [ :fetch ]
+  include ActionController::Live
+
+  before_action :require_admin_role, only: [ :fetch, :fetch_stream ]
 
   def fetch
     Max3Session.open { |s| s.fetch_event_log }
     redirect_to access_events_path, notice: "Event log retrieved."
   rescue => e
     redirect_to access_events_path, alert: "Failed to retrieve log: #{e.message}"
+  end
+
+  def fetch_stream
+    response.headers["Content-Type"]      = "text/event-stream"
+    response.headers["Cache-Control"]     = "no-cache"
+    response.headers["X-Accel-Buffering"] = "no"
+    sse = ActionController::Live::SSE.new(response.stream, retry: 5000)
+    begin
+      sse.write({ message: "Connecting to controller…", current: 0, total: 0 }, event: "progress")
+      pages = nil
+      Max3Session.open { |s| pages = s.fetch_event_log { |n, _, msg| sse.write({ message: msg, current: n, total: 0 }, event: "progress") } }
+      sse.write({ notice: "#{pages} event(s) retrieved." }, event: "done")
+    rescue => e
+      sse.write({ error: e.message }, event: "failure")
+    ensure
+      sse.close
+    end
   end
 
   def index

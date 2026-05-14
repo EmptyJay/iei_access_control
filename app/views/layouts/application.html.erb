@@ -64,12 +64,69 @@
     <div id="loading-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; flex-direction:column; gap:1rem;">
       <div class="spinner-border text-light" style="width:3rem; height:3rem;" role="status"></div>
       <div id="loading-message" class="text-white fs-5 fw-semibold text-center px-4"></div>
+      <div id="loading-bar-wrap" style="display:none; width:320px; max-width:80vw;">
+        <div class="progress" style="height:8px;">
+          <div id="loading-bar" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%"></div>
+        </div>
+        <div id="loading-detail" class="text-white-50 small text-center mt-1"></div>
+      </div>
       <div class="text-white-50 small">Do not close this tab.</div>
     </div>
     <script>
       function showLoading(message) {
         document.getElementById('loading-message').textContent = message;
+        document.getElementById('loading-bar-wrap').style.display = 'none';
         document.getElementById('loading-overlay').style.display = 'flex';
+      }
+
+      function startStream(url, confirmMsg) {
+        if (confirmMsg && !confirm(confirmMsg)) return;
+
+        const overlay  = document.getElementById('loading-overlay');
+        const msgEl    = document.getElementById('loading-message');
+        const barWrap  = document.getElementById('loading-bar-wrap');
+        const barEl    = document.getElementById('loading-bar');
+        const detailEl = document.getElementById('loading-detail');
+
+        msgEl.textContent    = 'Connecting…';
+        detailEl.textContent = '';
+        barEl.style.width    = '0%';
+        barWrap.style.display = 'none';
+        overlay.style.display = 'flex';
+
+        const source = new EventSource(url);
+
+        source.addEventListener('progress', function(e) {
+          const d = JSON.parse(e.data);
+          if (d.message) msgEl.textContent = d.message;
+          if (d.total > 0) {
+            barWrap.style.display = '';
+            barEl.style.width = Math.round(d.current / d.total * 100) + '%';
+            detailEl.textContent = d.current + ' of ' + d.total;
+          } else if (d.current > 0) {
+            barWrap.style.display = 'none';
+            detailEl.textContent = d.current + ' processed';
+          }
+        });
+
+        source.addEventListener('done', function(e) {
+          source.close();
+          window.location.reload();
+        });
+
+        source.addEventListener('failure', function(e) {
+          source.close();
+          overlay.style.display = 'none';
+          let msg = 'Operation failed.';
+          try { msg = JSON.parse(e.data).error || msg; } catch(_) {}
+          alert('Error: ' + msg);
+        });
+
+        source.onerror = function() {
+          source.close();
+          overlay.style.display = 'none';
+          alert('Connection lost. Please reload and check the result.');
+        };
       }
     </script>
   </body>

@@ -62,9 +62,10 @@
         <span class="text-muted ms-2">All members are in sync with the controller.</span>
       <% end %>
     </div>
-    <%= button_to "Sync Now", sync_users_path,
-          class: "btn #{@pending_sync > 0 ? 'btn-warning' : 'btn-outline-secondary'} flex-shrink-0",
-          form: { onsubmit: "showLoading('Syncing #{@pending_sync} member(s) with the controller…'); return true;" } %>
+    <button class="btn <%= @pending_sync > 0 ? 'btn-warning' : 'btn-outline-secondary' %> flex-shrink-0"
+            onclick="startStream('<%= sync_stream_path %>')">
+      Sync Now
+    </button>
   </div>
 </div>
 
@@ -82,13 +83,15 @@
     </div>
     <div class="d-flex gap-2 flex-shrink-0">
       <% if @lockdown_active %>
-        <%= button_to "Restore Access", restore_path,
-              class: "btn btn-success",
-              form: { onsubmit: "if(!confirm('Re-add all standard members to the controller?')) return false; showLoading('Restoring access — re-adding standard members…'); return true;" } %>
+        <button class="btn btn-success"
+                onclick="startStream('<%= restore_stream_path %>', 'Re-add all standard members to the controller?')">
+          Restore Access
+        </button>
       <% else %>
-        <%= button_to "Lockdown", lockdown_path,
-              class: "btn btn-danger",
-              form: { onsubmit: "if(!confirm('Remove all standard members from the controller? Officers will keep access.')) return false; showLoading('Initiating lockdown — removing standard members…'); return true;" } %>
+        <button class="btn btn-danger"
+                onclick="startStream('<%= lockdown_stream_path %>', 'Remove all standard members from the controller? Officers will keep access.')">
+          Lockdown
+        </button>
       <% end %>
     </div>
   </div>
@@ -107,18 +110,20 @@
       <div class="fw-semibold">Clear All Users from Controller</div>
       <div class="text-muted small">Removes every member slot the app knows about from the controller hardware. All members will be marked unsynced.</div>
     </div>
-    <%= button_to "Clear Controller", clear_users_path,
-          class: "btn btn-danger flex-shrink-0",
-          form: { onsubmit: "if(!confirm('Remove ALL #{@total_members} member(s) from the controller? Everyone will lose access until re-synced. This cannot be undone.')) return false; showLoading('Clearing #{@total_members} slot(s) from the controller…'); return true;" } %>
+    <button class="btn btn-danger flex-shrink-0"
+            onclick="startStream('<%= clear_stream_path %>', 'Remove ALL <%= @total_members %> member(s) from the controller? Everyone will lose access until re-synced. This cannot be undone.')">
+      Clear Controller
+    </button>
   </div>
   <div class="card-body border-top d-flex align-items-center justify-content-between gap-3">
     <div>
       <div class="fw-semibold">Force Clear Controller</div>
       <div class="text-muted small">Walks all 1998 slots (3–2000) and deletes each one from the hardware, regardless of what the app knows. Use when the controller has users the app doesn't know about (e.g. after Hub Manager).</div>
     </div>
-    <%= button_to "Force Clear", force_clear_users_path,
-          class: "btn btn-danger flex-shrink-0",
-          form: { onsubmit: "if(!confirm('Walk all 1998 slots and remove every user from the controller hardware? This cannot be undone.')) return false; showLoading('Force-clearing all 1998 slots from the controller — this will take 2–3 minutes…'); return true;" } %>
+    <button class="btn btn-danger flex-shrink-0"
+            onclick="startStream('<%= force_clear_stream_path %>', 'Walk all 1998 slots and remove every user from the controller hardware? This cannot be undone.')">
+      Force Clear
+    </button>
   </div>
   </div>
 </div>

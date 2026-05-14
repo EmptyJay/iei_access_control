@@ -43,12 +43,14 @@ class Max3Session
 
   # Sync all pending users (added, modified, or deleted) to the controller.
   # Marks users as synced: true on success.
-  def sync_users
+  def sync_users(&on_progress)
     handshake!
     send_and_ack(set_datetime_packet)
 
     to_add    = User.pending_sync.active.order(:site_code, :card_number).to_a
     to_delete = User.pending_sync.inactive.to_a
+    total     = to_add.size + to_delete.size
+    done      = 0
 
     to_add.each do |user|
       counter     = Setting.increment_counter!
@@ -58,12 +60,16 @@ class Max3Session
       packet      = add_user_packet(user.slot, card, counter_hi: counter_hi, counter_lo: counter_lo)
       send_and_ack(packet)
       user.update!(synced: true, write_counter: counter)
+      done += 1
+      on_progress&.call(done, total, "Adding #{user.full_name}…")
       Rails.logger.info "[Max3] Added slot #{user.slot} (#{user.full_name})"
     end
 
     to_delete.each do |user|
       send_and_ack(delete_user_packet(user.slot))
       user.destroy!
+      done += 1
+      on_progress&.call(done, total, "Removing #{user.full_name}…")
       Rails.logger.info "[Max3] Deleted slot #{user.slot}"
     end
 
@@ -107,7 +113,7 @@ class Max3Session
   end
 
   # Read all unread event log pages and import them as AccessEvent records.
-  def fetch_event_log
+  def fetch_event_log(&on_progress)
     handshake!
     send_raw(END_SESSION)
 
@@ -116,12 +122,12 @@ class Max3Session
 
     unless status
       Rails.logger.warn "[Max3] Unexpected response after END_SESSION: #{hex_str(status_packet)}"
-      return
+      return 0
     end
 
     if status[:log_start] == status[:log_end]
       Rails.logger.info "[Max3] No new events (log_start == log_end == 0x#{status[:log_start].to_s(16).upcase})"
-      return
+      return 0
     end
 
     pages_read = 0
@@ -132,6 +138,7 @@ class Max3Session
       process_log_page(page)
       addr += 8
       pages_read += 1
+      on_progress&.call(pages_read, 0, "#{pages_read} event(s) read…")
     end
 
     send_and_ack(END_LOG)
@@ -139,6 +146,7 @@ class Max3Session
     recv_packet  # updated status with new log_start = old log_end
 
     Rails.logger.info "[Max3] Imported #{pages_read} log pages"
+    pages_read
   end
 
   # Delete every slot that exists in the local database from the controller.
@@ -146,14 +154,16 @@ class Max3Session
   # will re-add whichever ones are still active.
   #
   # Returns the number of slots deleted.
-  def clear_all_users
+  def clear_all_users(&on_progress)
     slots = User.pluck(:slot)
     raise "No users in database to clear" if slots.empty?
 
+    total = slots.size
     handshake!
 
-    slots.each do |slot|
+    slots.each.with_index(1) do |slot, n|
       send_and_ack(delete_user_packet(slot))
+      on_progress&.call(n, total, "Clearing slot #{slot}…")
       Rails.logger.info "[Max3] Cleared slot #{slot}"
     end
 
@@ -167,8 +177,9 @@ class Max3Session
   # regardless of what the app database contains. Slots 1 and 2 are always
   # skipped (reserved master users). Does not read the database; marks all
   # existing DB users unsynced afterward. Returns the number of slots swept.
-  def force_clear_all_users(first: 3, last: 2000)
+  def force_clear_all_users(first: 3, last: 2000, &on_progress)
     first = [first, 3].max  # never touch slots 1 or 2
+    total = last - first + 1
 
     handshake!
 
@@ -176,6 +187,7 @@ class Max3Session
     (first..last).each do |slot|
       send_and_ack(delete_user_packet(slot))
       swept += 1
+      on_progress&.call(swept, total, "Clearing slot #{slot} of #{last}…") if swept % 10 == 0 || swept == total
       Rails.logger.info "[Max3] Force-clear: slot #{slot}/#{last}" if swept % 100 == 0
     end
 
@@ -188,14 +200,16 @@ class Max3Session
   # Remove all standard-tier users from the controller and mark them synced: false.
   # Officers are untouched. Run sync_users afterward to restore access.
   # Returns the number of slots removed.
-  def lockdown
+  def lockdown(&on_progress)
     slots = User.standard.pluck(:slot)
     raise "No standard users in database" if slots.empty?
 
+    total = slots.size
     handshake!
 
-    slots.each do |slot|
+    slots.each.with_index(1) do |slot, n|
       send_and_ack(delete_user_packet(slot))
+      on_progress&.call(n, total, "Removing member #{n} of #{total}…")
       Rails.logger.info "[Max3] Lockdown: removed slot #{slot}"
     end
 
