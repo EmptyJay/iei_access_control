@@ -13,7 +13,7 @@
   <%# Filter bar %>
   <div class="row g-2 align-items-center mb-3">
     <div class="col-sm-4">
-      <input type="search" id="name-search" class="form-control" placeholder="Search by name…"
+      <input type="search" id="name-search" class="form-control" placeholder="Search by name or card number…"
              oninput="onFilterChange()" autocomplete="off" data-1p-ignore>
     </div>
     <div class="col-auto">
@@ -98,6 +98,7 @@
       <% @users.each do |user| %>
         <tr style="cursor:pointer"
             data-name="<%= "#{user.first_name} #{user.last_name}".downcase %>"
+            data-card="<%= user.card_number %>"
             data-active="<%= user.active %>"
             data-synced="<%= user.synced %>"
             data-tier="<%= user.tier %>"
@@ -175,7 +176,7 @@
     const sync   = document.querySelector('input[name="sync-filter"]:checked').value;
     const tier   = document.querySelector('input[name="tier-filter"]:checked').value;
     return allRows().filter(row =>
-      row.dataset.name.includes(name) &&
+      (row.dataset.name.includes(name) || row.dataset.card.includes(name)) &&
       (status === '' || row.dataset.active === status) &&
       (sync   === '' || row.dataset.synced === sync) &&
       (tier   === '' || row.dataset.tier   === tier)
